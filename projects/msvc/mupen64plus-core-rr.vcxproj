@@ -370,6 +370,7 @@
     <ClCompile Include="..\..\src\device\pif\cic.c" />
     <ClCompile Include="..\..\src\device\pif\n64_cic_nus_6105.c" />
     <ClCompile Include="..\..\src\device\pif\pif.c" />
+    <ClCompile Include="..\..\src\VCR\rerecording.c" />
     <ClCompile Include="..\..\subprojects\md5\md5.c" />
     <ClCompile Include="..\..\subprojects\minizip\ioapi.c" />
     <ClCompile Include="..\..\subprojects\minizip\unzip.c" />
@@ -660,6 +661,8 @@
     <ClInclude Include="..\..\src\device\pif\cic.h" />
     <ClInclude Include="..\..\src\device\pif\n64_cic_nus_6105.h" />
     <ClInclude Include="..\..\src\device\pif\pif.h" />
+    <ClInclude Include="..\..\src\VCR\m64.h" />
+    <ClInclude Include="..\..\src\VCR\rerecording.h" />
     <ClInclude Include="..\..\subprojects\md5\md5.h" />
     <ClInclude Include="..\..\subprojects\minizip\crypt.h" />
     <ClInclude Include="..\..\subprojects\minizip\ioapi.h" />
