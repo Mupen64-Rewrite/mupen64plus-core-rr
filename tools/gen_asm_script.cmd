@@ -1,4 +1,5 @@
 @echo off
+echo "working dir: %cd%"
 setlocal enableextensions
 
 :: Countermeasure vs tainted build environment by known third party utilities
@@ -39,8 +40,8 @@ if defined GAS_EXTRA set GAS_CLARG=%GAS_OBJDIR% %GAS_EXTRA%
 :: * Ensure that 'GAS_SRCDIR' and 'GAS_OBJDIR' exist or are defined and send an
 ::   error signal if not
 ::
-if not exist "%GAS_SRCDIR%asm_defines.c" exit /b 202
-if not defined GAS_OBJDIR exit /b 303
+if not exist mupen64plus-core-rr.vcxproj exit /b 202
+if not exist "%GAS_SRCDIR%asm_defines.c" exit /b 303
 
 :: Legacy code adaptation for this script:
 ::
