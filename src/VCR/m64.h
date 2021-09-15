@@ -14,6 +14,7 @@
 
 //#define MOVIE_MAX_METADATA_SIZE (MOVIE_DESCRIPTION_DATA_SIZE > MOVIE_AUTHOR_DATA_SIZE ? MOVIE_DESCRIPTION_DATA_SIZE : MOVIE_AUTHOR_DATA_SIZE)
 
+#pragma pack(push, 1)
 typedef struct
 {
 	uint32_t	magic;			// "M64\0x1a"
@@ -66,5 +67,6 @@ typedef struct
 
 
 } SMovieHeader; // should be exactly 1024 bytes
+#pragma pack(pop)
 
 #endif
