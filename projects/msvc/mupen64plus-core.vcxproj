@@ -787,6 +787,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{92D3FEB9-2129-41C5-8577-BCD7D961EF41}</ProjectGuid>
     <RootNamespace>mupen64pluscore</RootNamespace>
+    <ProjectName>mupen64plus-core-rr</ProjectName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(WindowsTargetPlatformVersion)'=='' and '$(VisualStudioVersion)' != '14.0'">
     <LatestTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</LatestTargetPlatformVersion>
