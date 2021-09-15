@@ -1,4 +1,5 @@
 @echo off
+echo "working dir: %cd%"
 setlocal enableextensions
 
 :: Validating arguments passed from Visual Studio to use as variables:
@@ -20,7 +21,7 @@ if defined GAS_EXTRA set GAS_CLARG=%GAS_OBJDIR% %GAS_EXTRA%
 :: * Ensures that "Item A" and "Item B" exist, and send an error signal if not
 :: * The sole purpose of this code is to make the script fail outside VS
 ::
-if not exist mupen64plus-core.vcxproj exit /b 202
+if not exist mupen64plus-core-rr.vcxproj exit /b 202
 if not exist "%GAS_SRCDIR%asm_defines.c" exit /b 303
 
 :: Legacy code adaptation for this script:
