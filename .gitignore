@@ -2,3 +2,4 @@
 /projects/unix/libmupen64plus*.so*
 /.vs/mupen64plus-core-rr/v16
 /.vs
+/projects/msvc/.vs/mupen64plus-core/v16
