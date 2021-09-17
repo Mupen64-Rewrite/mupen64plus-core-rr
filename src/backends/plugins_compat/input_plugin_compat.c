@@ -29,6 +29,10 @@
 #include "main/main.h"
 #include "main/netplay.h"
 
+#ifdef VCR_SUPPORT
+#include "VCR/VCR.h"
+#endif
+
 #include <stdint.h>
 #include <string.h>
 #include <api/m64p_plugin.h>
@@ -61,7 +65,15 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
     int pak_change_requested = 0;
 
     /* first poll controller */
+#ifdef VCR_SUPPORT
+    if (VCR_IsPlaying() && VCR_IsReadOnly())
+    {
+        VCR_GetKeys(&keys);
+    }
+    else if (!netplay_is_init())
+#else
     if (!netplay_is_init())
+#endif
     {
         if (input.getKeys)
             input.getKeys(cin_compat->control_id, &keys);
@@ -133,6 +145,12 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
     cin_compat->last_input = keys.Value;
 
     *input_ = keys.Value;
+#ifdef VCR_SUPPORT
+    if (VCR_IsPlaying() && !VCR_IsReadOnly())
+    {
+        VCR_SetKeys(keys);
+    }
+#endif
     return M64ERR_SUCCESS;
 }
 
