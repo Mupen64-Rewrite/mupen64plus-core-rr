@@ -28,6 +28,7 @@
  * if you want to implement an interface, you should look here
  */
 
+
 #include <SDL.h>
 #include <assert.h>
 #include <stdarg.h>
@@ -37,6 +38,10 @@
 #include <string.h>
 
 #define M64P_CORE_PROTOTYPES 1
+#ifdef VCR_SUPPORT
+#include "VCR/VCR.h"
+#endif
+
 #include "api/callbacks.h"
 #include "api/config.h"
 #include "api/debugger.h"
@@ -1432,6 +1437,16 @@ void main_change_gb_cart(int control_id)
 
 m64p_error main_run(void)
 {
+#ifdef VCR_SUPPORT
+    if (VCR_StartMovie("tas.m64") == M64ERR_SUCCESS) //the code is hard
+    {
+        DebugMessage(M64MSG_INFO,"M64 loaded epic");
+    }
+    else
+    {
+        DebugMessage(M64MSG_ERROR, "M64 not loaded not epic");
+    }
+#endif
     size_t i, k;
     size_t rdram_size;
     uint32_t count_per_op;

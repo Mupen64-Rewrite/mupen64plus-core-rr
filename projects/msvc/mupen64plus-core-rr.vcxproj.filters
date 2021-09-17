@@ -121,7 +121,7 @@
     <Filter Include="device\r4300\new_dynarec\arm64">
       <UniqueIdentifier>{8f211c2b-70bb-4714-bcbb-c77abd1af54d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="rerecording">
+    <Filter Include="VCR">
       <UniqueIdentifier>{a4bf0fb2-6c14-4baf-9851-b9e390fa6e05}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -423,8 +423,8 @@
     <ClCompile Include="..\..\src\device\r4300\new_dynarec\arm64\assem_arm64.c">
       <Filter>device\r4300\new_dynarec\arm64</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\VCR\rerecording.c">
-      <Filter>rerecording</Filter>
+    <ClCompile Include="..\..\src\VCR\VCR.cpp">
+      <Filter>VCR</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -774,10 +774,10 @@
       <Filter>device\dd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\VCR\m64.h">
-      <Filter>rerecording</Filter>
+      <Filter>VCR</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\VCR\rerecording.h">
-      <Filter>rerecording</Filter>
+    <ClInclude Include="..\..\src\VCR\VCR.h">
+      <Filter>VCR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
