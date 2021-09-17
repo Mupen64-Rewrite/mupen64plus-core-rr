@@ -10,15 +10,32 @@ extern "C" {
 #endif
 
 #include "api/m64p_types.h"
+#include "api/m64p_plugin.h"
 
 //TODO: figure out needed states (I dont think stuff like starting playback is neccesary?...)
 //also this stays as enum not enum class for C compatibility
 typedef enum
 {
 	VCR_IDLE,
-	VCR_READWRITE,
-	VCR_READONLY
+	VCR_ACTIVE
 } VCRState;
+
+/// <summary>
+/// Stops movie and frees the internal buffer, can be called at emu close to clean up
+/// </summary>
+void VCR_StopMovie();
+
+/// <summary>
+/// pastes given keys to current frame, then advances frame. If input buffer is too small it resizes itself
+/// </summary>
+/// <param name="keys">keys describing frame data</param>
+void VCR_SetKeys(BUTTONS keys);
+
+/// <summary>
+/// Pastes next frame to keys. If this was last frame, stops m64 playback. There always is a frame if VCR is not idle
+/// </summary>
+/// <param name="keys">place where to paste inputs</param>
+void VCR_GetKeys(BUTTONS* keys);
 
 /// <summary>
 /// Checks if a movie is playing
@@ -31,7 +48,7 @@ BOOL VCR_IsPlaying();
 /// </summary>
 /// <see cref="VCR_IsPlaying"/>
 /// <returns>true or false</returns>
-BOOL VCR_GetReadOnly();
+BOOL VCR_IsReadOnly();
 
 /// <summary>
 /// sets readonly state

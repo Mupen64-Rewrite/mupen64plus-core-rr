@@ -19,13 +19,44 @@ extern "C" {
 static std::vector<BUTTONS> *gMovieBuffer = NULL; //holds reference to m64 data if movie is being played, otherwise NULL
 static VCRState VCR_state = VCRState::VCR_IDLE;
 static bool VCR_readonly;
+static unsigned curFrame = 0;
+
+#define BUFFER_GROWTH 256
+
+void VCR_StopMovie()
+{
+	VCR_state = VCR_IDLE;
+	delete gMovieBuffer;
+}
+
+
+void VCR_SetKeys(BUTTONS keys)
+{
+	(*gMovieBuffer)[curFrame++].Value = keys.Value;
+	if (curFrame >= gMovieBuffer->size())
+	{
+		gMovieBuffer->resize(gMovieBuffer->size() + BUFFER_GROWTH); //impending doom approaches...
+	}
+}
+
+void VCR_GetKeys(BUTTONS* keys)
+{
+	//keys->Value = (*gMovieBuffer)[curFrame++].Value; //get the value, then advance frame
+	//the frame we just provided could be last, check for bounds.
+	//frames are 0-indexed, size is 1-indexed, therefore >=
+	if (curFrame >= gMovieBuffer->size())
+	{
+		//@TODO somehow notify frontend about that
+		VCR_StopMovie();
+	}
+}
 
 BOOL VCR_IsPlaying()
 {
-	return VCR_state != VCRState::VCR_IDLE;
+	return VCR_state != VCR_IDLE;
 }
 
-BOOL VCR_GetReadOnly()
+BOOL VCR_IsReadOnly()
 {
 	return VCR_readonly;
 }
@@ -34,7 +65,6 @@ BOOL VCR_SetReadOnly(BOOL state)
 {
 	return VCR_readonly = state;
 }
-
 
 m64p_error VCR_StartMovie(char* path)
 {
@@ -50,16 +80,35 @@ m64p_error VCR_StartMovie(char* path)
 
 	//this should never happen under normal conditions, means code logic error
 	if (gMovieBuffer != NULL)
+	{
+		fclose(m64);
 		return M64ERR_INTERNAL;
+	}
 
 	//create a vector with enough space
 	gMovieBuffer = new std::vector<BUTTONS>(movieHeader.length_samples * movieHeader.num_controllers);
 	if (m64 == NULL)
+	{
+		fclose(m64);
 		return M64ERR_NO_MEMORY;
+	}
+	fread(gMovieBuffer->data(), sizeof(BUTTONS), gMovieBuffer->size(),m64);
+	fclose(m64);
 
-	VCR_state = VCR_GetReadOnly() ? VCRState::VCR_READONLY : VCRState::VCR_READWRITE;
+	if (movieHeader.startFlags == MOVIE_START_FROM_NOTHING)
+		;//restart and clear save data
+	else if (movieHeader.startFlags == MOVIE_START_FROM_EEPROM)
+		;//restart
+	else if (movieHeader.startFlags == MOVIE_START_FROM_SNAPSHOT)
+		;//load .st
+
+	VCR_state = VCR_ACTIVE;
+	curFrame = 0;
+	VCR_SetReadOnly(true);
 	return M64ERR_SUCCESS;
 }
+
+#undef BUFFER_GROWTH
 
 //if (m64) play
 //else no play
