@@ -21,6 +21,11 @@ typedef enum
 } VCRState;
 
 /// <summary>
+/// Returns current frame, 0-indexed, accounts for controller;
+/// </summary>
+/// <returns>current frame number, or -1 if nothing is being played</returns>
+unsigned VCR_GetCurFrame();
+/// <summary>
 /// Stops movie and frees the internal buffer, can be called at emu close to clean up
 /// </summary>
 void VCR_StopMovie();
@@ -29,13 +34,16 @@ void VCR_StopMovie();
 /// pastes given keys to current frame, then advances frame. If input buffer is too small it resizes itself
 /// </summary>
 /// <param name="keys">keys describing frame data</param>
-void VCR_SetKeys(BUTTONS keys);
+/// <param name="channel">controller id</param>
+void VCR_SetKeys(BUTTONS keys, unsigned channel);
 
 /// <summary>
 /// Pastes next frame to keys. If this was last frame, stops m64 playback. There always is a frame if VCR is not idle
 /// </summary>
 /// <param name="keys">place where to paste inputs</param>
-void VCR_GetKeys(BUTTONS* keys);
+/// <param name="channel">controller id</param>
+/// <returns>true if movie ended</returns>
+BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel);
 
 /// <summary>
 /// Checks if a movie is playing

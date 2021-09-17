@@ -57,6 +57,17 @@ static int is_button_released(uint32_t input, uint32_t last_input, uint32_t mask
         && ((last_input & mask) != 0);
 }
 
+//test, remove later
+void displaykeys(BUTTONS keys)
+{
+    char input[64] = { 0 , };
+    if (keys.START_BUTTON) strcat(input, "S");
+    if (keys.Z_TRIG) strcat(input, "Z");
+    if (keys.A_BUTTON) strcat(input, "A");
+    if (keys.B_BUTTON) strcat(input, "B");
+    DebugMessage(M64MSG_INFO, "%d: %s x:%d y:%d", VCR_GetCurFrame(), input, keys.X_AXIS, keys.Y_AXIS);
+}
+
 static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
 {
     struct controller_input_compat* cin_compat = (struct controller_input_compat*)opaque;
@@ -68,7 +79,12 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
 #ifdef VCR_SUPPORT
     if (VCR_IsPlaying() && VCR_IsReadOnly())
     {
-        VCR_GetKeys(&keys);
+        if (VCR_GetKeys(&keys, cin_compat->control_id))
+        {
+            displaykeys(keys);
+            DebugMessage(M64MSG_INFO, "VCR Playback end");
+        }
+            
     }
     else if (!netplay_is_init())
 #else
@@ -148,7 +164,11 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
 #ifdef VCR_SUPPORT
     if (VCR_IsPlaying() && !VCR_IsReadOnly())
     {
-        VCR_SetKeys(keys);
+        VCR_SetKeys(keys, cin_compat->control_id);
+    }
+    if (VCR_IsPlaying())
+    {
+        displaykeys(keys);
     }
 #endif
     return M64ERR_SUCCESS;

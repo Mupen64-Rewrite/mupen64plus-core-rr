@@ -30,23 +30,12 @@ typedef struct
 
 	uint16_t	startFlags; //1-snapshot, 2-clean start, 4-start but with savedata
 	uint16_t  reserved2;
-	struct
-	{
-		unsigned present1 : 1; //controller 1 present
-		unsigned present2 : 1; //controller 2 present
-		unsigned present3 : 1; //controller 3 present
-		unsigned present4 : 1; //controller 4 present
-
-		unsigned mempak1 : 1; //controller 1 has mempak
-		unsigned mempak2 : 1; //controller 2 has mempak
-		unsigned mempak3 : 1; //controller 3 has mempak
-		unsigned mempak4 : 1; //controller 4 has mempak
-
-		unsigned rumble1 : 1; //controller 1 has rumblepak
-		unsigned rumble2 : 1; //controller 2 has rumblepak
-		unsigned rumble3 : 1; //controller 3 has rumblepak
-		unsigned rumble4 : 1; //controller 4 has rumblepak
-	} controllerFlags;
+	struct{
+		uint8_t present;
+		uint8_t mempak;
+		uint8_t rumblepak;
+	} cFlags;
+	uint8_t reserved3;
 	uint32_t	reservedFlags[8];
 
 	//---not supported, please use old mupen (this is really old)
@@ -56,7 +45,7 @@ typedef struct
 
 	char	romName[32]; // internal rom name from header
 	uint32_t	romCRC;
-	uint8_t	romCountry;
+	uint16_t	romCountry;
 	char	reservedBytes[56];
 	char	videoPluginName[64];
 	char	soundPluginName[64];
