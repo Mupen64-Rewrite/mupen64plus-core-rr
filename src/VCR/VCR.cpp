@@ -14,6 +14,7 @@ extern "C" {
 #include "api/callbacks.h"
 #include "api/m64p_plugin.h" //for BUTTON struct
 #include "osal/files.h"
+#include "main/main.h"
 }
 
 static std::vector<BUTTONS> *gMovieBuffer = NULL; //holds reference to m64 data if movie is being played, otherwise NULL
@@ -117,7 +118,12 @@ m64p_error VCR_StartMovie(char* path)
 	else if (gMovieHeader->startFlags == MOVIE_START_FROM_EEPROM)
 		;//restart
 	else if (gMovieHeader->startFlags == MOVIE_START_FROM_SNAPSHOT)
-		;//load .st
+	{
+		char statePath[PATH_MAX];
+		strcpy(statePath, path);
+		strcpy(statePath + strlen(statePath) - 4, ".st");
+		main_state_load(statePath); //@TODO check file errors
+	}
 
 	VCR_state = VCR_ACTIVE;
 	curSample = 0;
