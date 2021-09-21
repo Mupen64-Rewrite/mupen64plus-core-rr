@@ -25,10 +25,12 @@ typedef enum
 /// </summary>
 /// <returns>current frame number, or -1 if nothing is being played</returns>
 unsigned VCR_GetCurFrame();
+
 /// <summary>
-/// Stops movie and frees the internal buffer, can be called at emu close to clean up
+/// Stops movie, or jumps to first frame if restart is true. When no movie is playing, restart loads up previous movie.
 /// </summary>
-void VCR_StopMovie();
+/// <param name="restart">bool</param>
+void VCR_StopMovie(BOOL restart);
 
 /// <summary>
 /// pastes given keys to current frame, then advances frame. If input buffer is too small it resizes itself
