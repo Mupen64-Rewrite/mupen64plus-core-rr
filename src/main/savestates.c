@@ -51,6 +51,12 @@
 #include "savestates.h"
 #include "util.h"
 #include "workqueue.h"
+#ifdef VCR_SUPPORT
+#include "VCR/VCR.h"
+#define VCR_STOP VCR_StopMovie(FALSE);
+#else
+#define VCR_STOP //no action
+#endif
 
 enum { GB_CART_FINGERPRINT_SIZE = 0x1c };
 enum { GB_CART_FINGERPRINT_OFFSET = 0x134 };
@@ -206,6 +212,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
     {
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Could not open state file: %s", filepath);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
 
@@ -215,6 +222,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Could not read header from state file %s", filepath);
         gzclose(f);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
     curr = header;
@@ -224,6 +232,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "State file: %s is not a valid Mupen64plus savestate.", filepath);
         gzclose(f);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
     curr += 8;
@@ -237,6 +246,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "State version (%08x) isn't compatible. Please update Mupen64Plus.", version);
         gzclose(f);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
 
@@ -245,6 +255,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "State ROM MD5 does not match current ROM.");
         gzclose(f);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
     curr += 32;
@@ -257,6 +268,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Insufficient memory to load state.");
         gzclose(f);
         SDL_UnlockMutex(savestates_lock);
+        VCR_STOP
         return 0;
     }
     if (version == 0x00010000) /* original savestate version */
@@ -268,6 +280,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             free(savestateData);
             gzclose(f);
             SDL_UnlockMutex(savestates_lock);
+            VCR_STOP
             return 0;
         }
     }
@@ -281,6 +294,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             free(savestateData);
             gzclose(f);
             SDL_UnlockMutex(savestates_lock);
+            VCR_STOP
             return 0;
         }
     }
@@ -295,6 +309,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             free(savestateData);
             gzclose(f);
             SDL_UnlockMutex(savestates_lock);
+            VCR_STOP
             return 0;
         }
     }

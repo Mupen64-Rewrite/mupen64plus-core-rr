@@ -82,7 +82,7 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_)
         if (VCR_GetKeys(&keys, cin_compat->control_id))
         {
             displaykeys(keys);
-            DebugMessage(M64MSG_INFO, "VCR Playback end");
+            //DebugMessage(M64MSG_INFO, "VCR Playback end");
         }
             
     }

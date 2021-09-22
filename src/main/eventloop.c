@@ -72,6 +72,9 @@
 #include "plugin/plugin.h"
 #include "sdl_key_converter.h"
 #include "util.h"
+#ifdef VCR_SUPPORT
+#include "VCR/VCR.h"
+#endif
 
 /* version number for CoreEvents config section */
 #define CONFIG_PARAM_VERSION 1.00
@@ -656,6 +659,16 @@ void event_sdl_keydown(int keysym, int keymod)
     else if (keysym == sdl_keysym2native(ConfigGetParamInt(l_CoreEventsConfig, kbdGameshark))) {
         event_set_gameshark(1);
     }
+    //VCR hotkeys, atm hardcoded lol
+#ifdef VCR_SUPPORT
+    else if (keymod & (KMOD_LSHIFT | KMOD_LCTRL))
+    {
+        if(keysym == sdl_keysym2native(SDLK_s))
+            VCR_StopMovie(FALSE);
+        else if (keysym==sdl_keysym2native(SDLK_d))
+            VCR_StopMovie(TRUE); //restart last
+    }
+#endif
     else
 #endif /* NO_KEYBINDINGS */
     {

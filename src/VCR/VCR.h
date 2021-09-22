@@ -12,6 +12,19 @@ extern "C" {
 #include "api/m64p_types.h"
 #include "api/m64p_plugin.h"
 
+/// <summary>
+/// Function that gets informed about various event happening in VCR, errors, messages, infos etc. It receives string to display somewhere, its up to frontend to decide where.
+/// </summary>
+/// <returns>True if message was handled, false if ignored (right now nothing happens when ignored, but maybe certain errors will be more flexible with this)</returns>
+typedef BOOL(*MsgFunc)(m64p_msg_level lvl, char*);
+
+
+/// <summary>
+/// Sets any vcr error callback
+/// </summary>
+/// <param name="callb">Function to call when error happens</param>
+void VCR_SetErrorCallback(MsgFunc callb);
+
 //TODO: figure out needed states (I dont think stuff like starting playback is neccesary?...)
 //also this stays as enum not enum class for C compatibility
 typedef enum

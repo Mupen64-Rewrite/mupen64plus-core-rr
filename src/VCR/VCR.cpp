@@ -17,6 +17,8 @@ extern "C" {
 #include "main/main.h"
 }
 
+#define BUFFER_GROWTH 256
+
 //either holds current movie's path, or last movie. This could be initialised from config and have "load last m64" option?
 static char moviePath[PATH_MAX] = { 0 };
 
@@ -26,9 +28,30 @@ static VCRState VCR_state = VCR_IDLE;
 static bool VCR_readonly;
 static unsigned curSample = 0; //doesnt account in for multiple controllers, used as a pointer for vector
 
+BOOL DefaultErr(m64p_msg_level, char*);
 
+/// <summary>
+/// Calls function that displays the message somewhere. Waits for return
+/// </summary>
+/// <param name="lvl">Severity, see m64p_msg_level</param>
+/// <param name="what">Textual representation. Translating might be supported later</param>
+/// <returns>Was the message ignored?
+/// </returns>
+static MsgFunc VCR_Message = DefaultErr;
 
-#define BUFFER_GROWTH 256
+/// <summary>
+/// default handler for errors, prints to stdout
+/// </summary>
+BOOL DefaultErr(m64p_msg_level lvl, char* what)
+{
+	DebugMessage(lvl, "%s", what);
+	return TRUE;
+}
+
+void VCR_SetErrorCallback(MsgFunc callb);
+{
+	VCR_Message = callb;
+}
 
 /// <summary>
 /// Looks at m64 header flags and does appropriate things to core before starting movie.
@@ -37,19 +60,26 @@ static unsigned curSample = 0; //doesnt account in for multiple controllers, use
 static void PrepareCore(char* path)
 {
 	if (gMovieHeader->startFlags == MOVIE_START_FROM_NOTHING)
+	{
+		VCR_Message(M64MSG_INFO, "Core reset");
 		main_reset(true);
+	}
 	else if (gMovieHeader->startFlags == MOVIE_START_FROM_EEPROM)
+	{
 		//hard reset
 		//It doesn't detect if there were any polls, so for example using this with commandline will start emu
 		//and then instantly reset anyway
 		//@TODO: clear/ignore save data!!
+		VCR_Message(M64MSG_INFO, "Core reset");
 		main_reset(true);
+	}
 	else if (gMovieHeader->startFlags == MOVIE_START_FROM_SNAPSHOT)
 	{
 		char statePath[PATH_MAX];
 		strcpy(statePath, path);
 		strcpy(statePath + strlen(statePath) - 4, ".st");
-		main_state_load(statePath); //@TODO check file errors
+		VCR_Message(M64MSG_INFO, "Loading movie .st");
+		main_state_load(statePath);
 	}
 }
 
@@ -57,11 +87,16 @@ void VCR_StopMovie(BOOL restart)
 {
 	if (!restart) //stop it
 	{
-		VCR_state = VCR_IDLE;
-		delete gMovieBuffer;
-		delete gMovieHeader;
-		gMovieBuffer = NULL;
-		gMovieHeader = NULL;
+		if (VCR_IsPlaying())
+		{
+			VCR_state = VCR_IDLE;
+			delete gMovieBuffer;
+			delete gMovieHeader;
+			gMovieBuffer = NULL;
+			gMovieHeader = NULL;
+			//@TODO notify frontend more precisely, maybe with callback
+			VCR_Message(M64MSG_INFO, "Playback stopped");
+		}
 	}
 	//if path exists
 	else if(moviePath[0]!='\0')
@@ -76,6 +111,7 @@ void VCR_StopMovie(BOOL restart)
 		{
 			VCR_StartMovie(moviePath);
 		}
+		VCR_Message(M64MSG_INFO, "Playback restarted");
 	}
 }
 
@@ -100,7 +136,6 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 		//frames are 0-indexed, size is 1-indexed, therefore >=
 		if (curSample >= gMovieBuffer->size())
 		{
-			//@TODO somehow notify frontend about that
 			VCR_StopMovie(true);
 			return true; //ended
 		}
@@ -135,7 +170,9 @@ m64p_error VCR_StartMovie(char* path)
 	FILE *m64 = osal_file_open(path,"rb");
 	if (m64 == NULL)
 	{
-		DebugMessage(M64MSG_INFO, "LoadM64 error: %s", strerror(errno));
+		char msg[1024] = "LoadM64 error: ";
+		strncat(msg, strerror(errno),sizeof(msg)- sizeof("LoadM64 error: "));
+		VCR_Message(M64MSG_INFO, msg);
 		return M64ERR_FILES;
 	}
 	gMovieHeader = new SMovieHeader; //@TODO move to heap if header will be needed in other places
@@ -165,6 +202,7 @@ m64p_error VCR_StartMovie(char* path)
 	VCR_state = VCR_ACTIVE;
 	curSample = 0;
 	VCR_SetReadOnly(true);
+	VCR_Message(M64MSG_INFO, "Started playback");
 	return M64ERR_SUCCESS;
 }
 
