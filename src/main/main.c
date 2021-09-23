@@ -1870,6 +1870,11 @@ void main_stop(void)
     if (!g_EmulatorRunning)
         return;
 
+#ifdef VCR_SUPPORT
+    if (VCR_IsPlaying())
+        //@TODO: ask user if they really want to
+        VCR_StopMovie(FALSE);
+#endif
     DebugMessage(M64MSG_STATUS, "Stopping emulation.");
     if(l_msgPause)
     {

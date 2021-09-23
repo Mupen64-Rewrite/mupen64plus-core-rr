@@ -305,15 +305,25 @@ static int MatchJoyCommand(const SDL_Event *event, eJoyCommand cmd)
 static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 {
     int cmd, action;
+    static BOOL confirm = FALSE;
 
     switch(event->type)
     {
         // user clicked on window close button
         case SDL_QUIT:
+#ifdef VCR_SUPPORT
+            if (!confirm && VCR_IsPlaying())
+            {
+                DebugMessage(M64MSG_WARNING, "A movie is being played, continue? (click again)");
+                confirm = TRUE;
+                break;
+            }
+#endif
             main_stop();
             break;
 
         case SDL_KEYDOWN:
+            confirm = FALSE;
 #if SDL_VERSION_ATLEAST(1,3,0)
             if (event->key.repeat)
                 return 0;

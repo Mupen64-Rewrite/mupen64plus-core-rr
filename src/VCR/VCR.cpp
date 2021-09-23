@@ -48,7 +48,7 @@ BOOL DefaultErr(m64p_msg_level lvl, char* what)
 	return TRUE;
 }
 
-void VCR_SetErrorCallback(MsgFunc callb);
+void VCR_SetErrorCallback(MsgFunc callb)
 {
 	VCR_Message = callb;
 }

@@ -187,8 +187,9 @@ static void process_controller_command(void* jbd,
     uint32_t input_ = 0;
     uint8_t cmd = tx_buf[0];
 
-    /* if controller can't successfully be polled, consider it to be absent */
-    if (cont->icin->get_input(cont->cin, &input_) != M64ERR_SUCCESS) {
+    /* if controller can't successfully be polled, consider it to be absent
+       !!!last argument tells later code whether its actually a read or a test poll!!!*/
+    if (cont->icin->get_input(cont->cin, &input_, !(cmd==0x01)) != M64ERR_SUCCESS) {
         *rx |= 0x80;
         return;
     }
