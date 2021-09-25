@@ -78,41 +78,36 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, BOOL is
 
     /* first poll controller */
 #ifdef VCR_SUPPORT
-    if (VCR_IsPlaying() && VCR_IsReadOnly() && !is_test)
+    //this looks werid, but we want to recover from GetKeys fails
+    if (!(VCR_IsPlaying() && VCR_IsReadOnly() && !is_test && !VCR_GetKeys(&keys, cin_compat->control_id)))
     {
-        if (VCR_GetKeys(&keys, cin_compat->control_id))
-        {
-            displaykeys(keys);
-            //DebugMessage(M64MSG_INFO, "VCR Playback end");
-        }
-            
-    }
-    else if (!netplay_is_init())
-#else
-    if (!netplay_is_init())
 #endif
-    {
-        if (input.getKeys)
-            input.getKeys(cin_compat->control_id, &keys);
-    }
-    else
-    {
-        int netplay_controller = netplay_get_controller(cin_compat->control_id);
-        if (netplay_controller >= 0)
+        if (!netplay_is_init())
         {
-            //Here we "trick" the input plugin
-            //by passing it the controller number that is controlling the player during netplay
-            uint8_t plugin = Controls[netplay_controller].Plugin;
-            uint8_t present = Controls[netplay_controller].Present;
             if (input.getKeys)
-                input.getKeys(netplay_controller, &keys);
-
-            netplay_set_plugin(cin_compat->control_id, Controls[netplay_controller].Plugin);
-            Controls[netplay_controller].Plugin = plugin;
-            Controls[netplay_controller].Present = present;
-            cin_compat->last_input = keys.Value; //disable pak switching for netplay
+                input.getKeys(cin_compat->control_id, &keys);
         }
+        else
+        {
+            int netplay_controller = netplay_get_controller(cin_compat->control_id);
+            if (netplay_controller >= 0)
+            {
+                //Here we "trick" the input plugin
+                //by passing it the controller number that is controlling the player during netplay
+                uint8_t plugin = Controls[netplay_controller].Plugin;
+                uint8_t present = Controls[netplay_controller].Present;
+                if (input.getKeys)
+                    input.getKeys(netplay_controller, &keys);
+
+                netplay_set_plugin(cin_compat->control_id, Controls[netplay_controller].Plugin);
+                Controls[netplay_controller].Plugin = plugin;
+                Controls[netplay_controller].Present = present;
+                cin_compat->last_input = keys.Value; //disable pak switching for netplay
+            }
+        }
+#ifdef VCR_SUPPORT
     }
+#endif
 
     /* return an error if controller is not plugged */
     if (!Controls[cin_compat->control_id].Present) {

@@ -64,7 +64,11 @@ enum { GB_CART_FINGERPRINT_OFFSET = 0x134 };
 enum { DD_DISK_ID_OFFSET = 0x43670 };
 
 static const char* savestate_magic = "M64+SAVE";
+#ifdef VCR_SUPPORT
+static const int savestate_latest_version = 0x00010801;  /* 1.8.1 = VCR data at the end*/
+#else
 static const int savestate_latest_version = 0x00010800;  /* 1.8 */
+#endif
 static const unsigned char pj64_magic[4] = { 0xC8, 0xA6, 0xD8, 0x23 };
 
 static savestates_job job = savestates_job_nothing;
@@ -189,6 +193,17 @@ static void savestates_clear_job(void)
 #define PUTDATA(buff, type, value) \
     do { type x = value; PUTARRAY(&x, buff, type, 1); } while(0)
 
+//returns false on failure
+static BOOL readQueue(gzFile* f, char** queue)
+{
+    for (unsigned i = 0; i <= 1024/4; i++)
+    {
+        gzread(f, queue + i, 4);
+        if (*((unsigned long*)queue + i) == 0xFFFFFFFF) return TRUE;
+    }
+    return FALSE;
+}
+
 static int savestates_load_m64p(struct device* dev, char *filepath)
 {
     unsigned char header[44];
@@ -274,13 +289,13 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
     if (version == 0x00010000) /* original savestate version */
     {
         if (gzread(f, savestateData, savestateSize) != (int)savestateSize ||
-            (gzread(f, queue, sizeof(queue)) % 4) != 0)
+            !readQueue(f,&queue))
         {
             main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Could not read Mupen64Plus savestate 1.0 data from %s", filepath);
             free(savestateData);
             gzclose(f);
             SDL_UnlockMutex(savestates_lock);
-            VCR_STOP
+            VCR_STOP //.st converter spits out 1.0.0, but mupen will save them as newest
             return 0;
         }
     }
@@ -294,7 +309,6 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             free(savestateData);
             gzclose(f);
             SDL_UnlockMutex(savestates_lock);
-            VCR_STOP
             return 0;
         }
     }
@@ -314,7 +328,55 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
         }
     }
 
+#ifdef VCR_SUPPORT
+    //try to read VCR data at the end, it can be absent if .st is not form movie
+    //only try 1.8.1 and 1.0.0 because if .st version gets changed by real devs we dont want to mess with that.
+    //maybe could check for x.x.1 instead where 1 means vcr support?... sketchy, might change later
+    
+    //this code is based on old mupen code
+    if (version == 0x00010000 || version == 0x00010801)
+    {
+        uint32_t isFromMovie = 0;
+        gzread(f,&isFromMovie, sizeof(isFromMovie));
+        //movie is active but .st does not have any vcr data
+        if (VCR_IsPlaying() && !isFromMovie)
+        {
+            main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Can't load a non-movie state while a movie is active.");
+            gzclose(f);
+            SDL_UnlockMutex(savestates_lock);
+            return 0;
+        }
+        //movie active and is from movie
+        //Note: it doesn't try to parse the data if movie is not active, as opposed to old mupen, this isn't needed anymore
+        else if (VCR_IsPlaying() && isFromMovie)
+        {
+            uint32_t inputBufSize = 0;
+            int res = gzread(f, &inputBufSize, sizeof(inputBufSize));
+            if (res!= sizeof(inputBufSize) || !inputBufSize) //either error happened or less bytes than enough were read
+            {
+                main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Savestate has invalid movie data.");
+                gzclose(f);
+                SDL_UnlockMutex(savestates_lock);
+                return 0;
+            }
+            uint32_t* vcrbuf = (uint32_t*)malloc(inputBufSize);
+            gzread(f, vcrbuf, inputBufSize);
+            int err;
+            if (err = VCR_LoadMovieData(vcrbuf,inputBufSize))
+            {
+                main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "VCR .st error: %s", VCR_LoadStateErrors[err]);
+                gzclose(f);
+                SDL_UnlockMutex(savestates_lock);
+                free(vcrbuf);
+                return 0;
+            }
+            free(vcrbuf);
+
+        }
+    }
+#endif
     gzclose(f);
+
     SDL_UnlockMutex(savestates_lock);
 
     // Parse savestate
@@ -1547,12 +1609,24 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     save_eventqueue_infos(&dev->r4300.cp0, queue);
 
     // Allocate memory for the save state data
+    //prepare buffer
+#ifdef VCR_SUPPORT
+    size_t VCRlen = 0;
+    uint32_t* VCRbuf;
+    if (VCR_IsPlaying())
+    {
+        VCRlen = VCR_CollectSTData(&VCRbuf);
+    }
+    save->size = 16788288 + sizeof(queue) + 4 + 4096 + 8 + VCRlen;  //8 is for isMovie and length
+#else
     save->size = 16788288 + sizeof(queue) + 4 + 4096;
+#endif
     save->data = curr = malloc(save->size);
     if (save->data == NULL)
     {
         free(save->filepath);
         free(save);
+        free(VCRbuf);
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Insufficient memory to save state.");
         return 0;
     }
@@ -1773,6 +1847,7 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     PUTDATA(curr, uint32_t, 0);
 #endif
 
+    int off = curr - save->data; //last offset...
     PUTDATA(curr, uint32_t, dev->ai.last_read);
     PUTDATA(curr, uint32_t, dev->ai.delayed_carry);
 
@@ -1912,9 +1987,19 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     PUTDATA(curr, uint16_t, dev->cart.flashram.erase_page);
     PUTDATA(curr, uint16_t, dev->cart.flashram.mode);
 
+#ifdef VCR_SUPPORT
+    curr = save->data+off+4096; //the previous section was supposed to be 0x1000 long >:(
+    PUTDATA(curr, uint32_t, VCR_IsPlaying());
+    if (VCRbuf != NULL)
+    {
+        PUTDATA(curr, uint32_t, VCRlen);
+        PUTARRAY(VCRbuf, curr, uint8_t, VCRlen);
+        free(VCRbuf);
+    }
+#endif
+
     init_work(&save->work, savestates_save_m64p_work);
     queue_work(&save->work);
-
     return 1;
 }
 
