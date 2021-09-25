@@ -27,6 +27,8 @@ static SMovieHeader* gMovieHeader = NULL;
 static VCRState VCR_state = VCR_IDLE;
 static bool VCR_readonly;
 static unsigned curSample = 0; //doesnt account in for multiple controllers, used as a pointer for vector
+static unsigned curVI = 0; //keeps track of VIs in a movie
+//@TODO: add VCR_AdvanceVI();
 
 BOOL DefaultErr(m64p_msg_level, char*);
 
@@ -115,14 +117,15 @@ void VCR_StopMovie(BOOL restart)
 	}
 }
 
-
+//@TODO: test this
 void VCR_SetKeys(BUTTONS keys, unsigned channel)
 {
-	(*gMovieBuffer)[curSample++].Value = keys.Value;
 	if (curSample >= gMovieBuffer->size())
 	{
 		gMovieBuffer->resize(gMovieBuffer->size() + BUFFER_GROWTH); //impending doom approaches...
 	}
+	(*gMovieBuffer)[curSample++].Value = keys.Value;
+	gMovieHeader->length_samples = curSample;
 }
 
 BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
@@ -131,14 +134,18 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 	//less bloated than using the flags itself
 	if (gMovieHeader->cFlags.present & (1 << channel))
 	{
-		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame
-		//the frame we just provided could be last, check for bounds.
-		//frames are 0-indexed, size is 1-indexed, therefore >=
+		//check if there are frames left
+		//curSample is 0 indexed, so we must >= with size
 		if (curSample >= gMovieBuffer->size())
 		{
+			return true;
 			VCR_StopMovie(true);
-			return true; //ended
 		}
+		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame
+	}
+	if (curSample == 200)
+	{
+		main_state_load("loadthis.st");
 	}
 	return false;
 }
@@ -163,10 +170,66 @@ unsigned VCR_GetCurFrame()
 	if (!VCR_IsPlaying()) return -1;
 	return curSample / gMovieHeader->num_controllers;
 }
+ 
+//saves inputs only up to current frame!!
+size_t VCR_CollectSTData(uint32_t** buf)
+{
+	if (!VCR_IsPlaying()) return 0; //don't try
+	//curSample+1 (because 0-index), then 4*4 bytes (this could be turned to a struct but its so small that eh) 
+	size_t len = (curSample + 1)*sizeof(BUTTONS) + 4 * sizeof(uint32_t);
+	*buf = (uint32_t*)malloc(len); 
+	if (buf == NULL || *buf==NULL) return 0;
+
+	uint32_t* p = *buf; //cast for help
+	*p++ = gMovieHeader->uid;
+	*p++ = curSample;
+	*p++ = curVI;
+	*p++ = gMovieHeader->length_samples;
+	memcpy(p, gMovieBuffer->data(), (curSample+1)*sizeof(BUTTONS));
+	return len;
+}
+
+//Must be called when a movie is active
+//@TODO: verify everything with debugger and add VIs
+int VCR_LoadMovieData(uint32_t* buf, unsigned len)
+{
+	if (!VCR_IsPlaying()) return -1; //don't try
+	uint32_t UID = *buf++;
+	uint32_t savedCurSample = *buf++; //consider this the last sample number available, we want to write/read from next one
+	uint32_t savedVI = *buf++;
+	uint32_t SampleCount = *buf++;
+	BUTTONS* inputs = (BUTTONS*)buf; //there are savedSampleNum+1 bytes of inputs, one frame is garbage, can be ignored (when loading old st ofc)
+	if ((4 + savedCurSample +1) * 4 != len && (4 + SampleCount + 1) * 4 != len) //either savedCurSample or SampleCount should add up, otherwise its bad
+		return VCR_ST_WRONG_FORMAT;
+	if (UID != gMovieHeader->uid)
+		return VCR_ST_BAD_UID;
+	if (savedCurSample > SampleCount)
+		return VCR_ST_INVALID_FRAME;
+	//if readwrite, overwrite input buffer with new data, might need to resize
+	if (!VCR_IsReadOnly())
+	{
+		//gMovieBuffer->assign(inputs, inputs + SampleCount);
+		gMovieBuffer->assign(inputs, inputs + savedCurSample); //we dont care what's after this frame, there's m64 for that...
+	}
+	else
+	{
+		//means a .st was saved, then movie was shortened and the .st is attempted again.
+		if (savedCurSample > gMovieHeader->length_samples)
+		{
+			return VCR_ST_INVALID_FRAME;
+		}
+	}
+	curSample = savedCurSample; //continue playing from next frame, no +1 because its 0 indexed
+	curVI = savedVI;
+	gMovieHeader->length_samples = savedCurSample; //this is done in getkeys anyway, but for safety do it here too
+
+	return VCR_ST_SUCCESS;
+}
 
 m64p_error VCR_StartMovie(char* path)
 {
-	//@TODO close previous m64 if loading while vcr state is not idle (ask warning in frontend or here, depends)
+	//@TODO maybe switch to custom errors
+	if (VCR_IsPlaying()) return M64ERR_INTERNAL;
 	FILE *m64 = osal_file_open(path,"rb");
 	if (m64 == NULL)
 	{

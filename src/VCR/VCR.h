@@ -12,12 +12,40 @@ extern "C" {
 #include "api/m64p_types.h"
 #include "api/m64p_plugin.h"
 
+typedef enum
+{
+	VCR_ST_SUCCESS,
+	VCR_ST_BAD_UID,
+	VCR_ST_INVALID_FRAME,
+	VCR_ST_WRONG_FORMAT
+} VCRSTErrorCodes;
+
+static const char* VCR_LoadStateErrors[] = {
+	"no error", //0 index
+	"not from this movie.",
+	"frame number out of range.",
+	"invalid format"
+};
+
 /// <summary>
 /// Function that gets informed about various event happening in VCR, errors, messages, infos etc. It receives string to display somewhere, its up to frontend to decide where.
 /// </summary>
 /// <returns>True if message was handled, false if ignored (right now nothing happens when ignored, but maybe certain errors will be more flexible with this)</returns>
 typedef BOOL(*MsgFunc)(m64p_msg_level lvl, char*);
 
+/// <summary>
+/// Gives pointer to buffer that holds everything you need to save.
+/// </summary>
+/// <param name="dest">pointer to pointer to buffer</param>
+/// <returns>Length of buffer in bytes</returns>
+size_t VCR_CollectSTData(uint32_t** dest);
+
+/// <summary>
+/// Loads data from VCR part of savestate
+/// </summary>
+/// <param name="buf">pointer to buffer, contains frame number, vi number, movie length and input data</param>
+/// <returns> error value, can be used with VCR_stateErrors[err] to get text</returns>
+int VCR_LoadMovieData(uint32_t* buf, unsigned len);
 
 /// <summary>
 /// Sets any vcr error callback
