@@ -221,7 +221,7 @@ int VCR_LoadMovieData(uint32_t* buf, unsigned len)
 	}
 	curSample = savedCurSample; //continue playing from next frame, no +1 because its 0 indexed
 	curVI = savedVI;
-	gMovieHeader->length_samples = savedCurSample; //this is done in getkeys anyway, but for safety do it here too
+	if (!VCR_IsReadOnly()) gMovieHeader->length_samples = savedCurSample; //this is done in getkeys anyway, but for safety do it here too
 
 	return VCR_ST_SUCCESS;
 }
