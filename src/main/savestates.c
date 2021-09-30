@@ -53,7 +53,7 @@
 #include "workqueue.h"
 #ifdef VCR_SUPPORT
 #include "VCR/VCR.h"
-#define VCR_STOP VCR_StopMovie(FALSE);
+#define VCR_STOP VCR_StopMovie(0);
 #else
 #define VCR_STOP //no action
 #endif

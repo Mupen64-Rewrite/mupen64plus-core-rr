@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include <cstddef>
+#include <stddef.h>
 
 #include "api/m64p_types.h"
 #include "api/m64p_plugin.h"
