@@ -60,7 +60,7 @@ struct controller_input_backend_interface
      * Encoding of the input status depends on the emulated controller flavor.
      * Returns M64ERR_SUCCESS on success
      */
-    m64p_error (*get_input)(void* cin, uint32_t* input, BOOL is_test);
+    m64p_error (*get_input)(void* cin, uint32_t* input, int is_test);
 };
 
 #endif

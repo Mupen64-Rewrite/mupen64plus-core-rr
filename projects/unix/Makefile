@@ -628,6 +628,11 @@ CFLAGS += -DM64P_NETPLAY
 SOURCE += $(SRCDIR)/main/netplay.c
 endif
 
+# VCR
+ifeq ($(VCR_SUPPORT), 1)
+SOURCE += $(SRCDIR)/VCR/VCR.cpp
+endif
+
 # source files for optional features
 ifeq ($(DBG_COUNT), 1)
   CFLAGS += -DCOUNT_INSTR
@@ -766,6 +771,7 @@ targets:
 	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
+	@echo "    VCR_SUPPORT=1  == Enables VCR support
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"

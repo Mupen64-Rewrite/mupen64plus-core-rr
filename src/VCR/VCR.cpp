@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <vector>
+#include <cstring>
 
 extern "C" {
 #include "api/m64p_types.h"
@@ -30,7 +31,7 @@ static unsigned curSample = 0; //doesnt account in for multiple controllers, use
 static unsigned curVI = 0; //keeps track of VIs in a movie
 //@TODO: add VCR_AdvanceVI();
 
-BOOL DefaultErr(m64p_msg_level, char*);
+BOOL DefaultErr(m64p_msg_level, const char*);
 
 /// <summary>
 /// Calls function that displays the message somewhere. Waits for return
@@ -44,10 +45,10 @@ static MsgFunc VCR_Message = DefaultErr;
 /// <summary>
 /// default handler for errors, prints to stdout
 /// </summary>
-BOOL DefaultErr(m64p_msg_level lvl, char* what)
+BOOL DefaultErr(m64p_msg_level lvl, const char* what)
 {
 	DebugMessage(lvl, "%s", what);
-	return TRUE;
+	return true;
 }
 
 void VCR_SetErrorCallback(MsgFunc callb)

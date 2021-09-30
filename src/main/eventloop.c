@@ -312,8 +312,7 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 {
 #ifndef NO_KEYBINDINGS
     int cmd, action;
-#endif /* NO_KEYBINDINGS */
-    static BOOL confirm = FALSE;
+    static int confirm = 0;
 
     switch(event->type)
     {
@@ -323,7 +322,7 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
             if (!confirm && VCR_IsPlaying())
             {
                 DebugMessage(M64MSG_WARNING, "A movie is being played, continue? (click again)");
-                confirm = TRUE;
+                confirm = 1;
                 break;
             }
 #endif
@@ -331,7 +330,7 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
             break;
 
         case SDL_KEYDOWN:
-            confirm = FALSE;
+            confirm = 0;
 #if SDL_VERSION_ATLEAST(1,3,0)
             if (event->key.repeat)
                 return 0;
