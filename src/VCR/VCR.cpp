@@ -16,6 +16,8 @@ extern "C" {
 #include "api/m64p_plugin.h" //for BUTTON struct
 #include "osal/files.h"
 #include "main/main.h"
+#include "plugin/plugin.h" //for controls
+#include "main/rom.h"
 }
 
 #define BUFFER_GROWTH 256
@@ -25,6 +27,8 @@ static char moviePath[PATH_MAX] = { 0 };
 
 static std::vector<BUTTONS> *gMovieBuffer = NULL; //holds reference to m64 data if movie is being played, otherwise NULL
 static SMovieHeader* gMovieHeader = NULL;
+static FILE* gMovieFile = NULL;
+
 static VCRState VCR_state = VCR_IDLE;
 static bool VCR_readonly;
 static unsigned curSample = 0; //doesnt account in for multiple controllers, used as a pointer for vector
@@ -58,8 +62,9 @@ void VCR_SetErrorCallback(MsgFunc callb)
 
 /// <summary>
 /// Looks at m64 header flags and does appropriate things to core before starting movie.
-/// Its used in both start and restart so its hande to have it as a helper function.
+/// Its used in start, restart and start recording, so its handy to have it as a helper function.
 /// </summary>
+/// <param name="path"> path to .m64 to find the st</param>
 static void PrepareCore(char* path)
 {
 	if (gMovieHeader->startFlags == MOVIE_START_FROM_NOTHING)
@@ -86,17 +91,52 @@ static void PrepareCore(char* path)
 	}
 }
 
+/// <summary>
+/// Updates input data (offset 1024) and header info about samples, writes however long the input buffer is
+/// </summary>
+/// <param name="f">m64 file handle</param>
+/// <returns> amount of samples written (not bytes)
+size_t VCR_SaveInputs(FILE* f)
+{
+	fseek(f, 0xC, SEEK_SET); //hardcoded offsets hmm
+	fwrite(&gMovieHeader->length_vis, sizeof(uint32_t), 1, f);
+	fseek(f, 0x18, SEEK_SET);
+	fwrite(&gMovieHeader->length_samples, sizeof(uint32_t), 1, f);
+
+	fseek(f, 1024, SEEK_SET);
+	return fwrite(gMovieBuffer->data(), sizeof(BUTTONS), gMovieBuffer->size(), f);
+
+}
+
+/// <summary>
+/// Updates header in the file
+/// </summary>
+/// <param name="f">m64 file</param>
+/// <param name="header">pointer to header data (you can construct your own)</param>
+/// <returns>returns bytes written, 1024 is correct</returns>
+size_t VCR_SaveMovieHeader(FILE* f, SMovieHeader* header)
+{
+	fseek(f,0,SEEK_SET);
+	return fwrite(header, 1, sizeof(SMovieHeader), f);
+}
+
 void VCR_StopMovie(BOOL restart)
 {
 	if (!restart) //stop it
 	{
 		if (VCR_IsPlaying())
 		{
+			VCR_SaveMovieHeader(gMovieFile, gMovieHeader);
+			VCR_SaveInputs(gMovieFile);
+
 			VCR_state = VCR_IDLE;
 			delete gMovieBuffer;
 			delete gMovieHeader;
 			gMovieBuffer = NULL;
 			gMovieHeader = NULL;
+
+			fclose(gMovieFile);
+			gMovieFile = NULL;
 			//@TODO notify frontend more precisely, maybe with callback
 			VCR_Message(M64MSG_INFO, "Playback stopped");
 		}
@@ -127,8 +167,10 @@ void VCR_SetKeys(BUTTONS keys, unsigned channel)
 	}
 	(*gMovieBuffer)[curSample++].Value = keys.Value;
 	gMovieHeader->length_samples = curSample;
+	gMovieHeader->length_vis = -1;
 }
 
+//@TODO: add reset input detection (reserved1 and 2 true pressed, everything else not pressed)
 BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 {
 	//gives out inputs for channels that are present in m64 header
@@ -139,8 +181,8 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 		//curSample is 0 indexed, so we must >= with size
 		if (curSample >= gMovieBuffer->size())
 		{
-			return true;
 			VCR_StopMovie(true);
+			return true;
 		}
 		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame
 	}
@@ -163,6 +205,7 @@ BOOL VCR_IsReadOnly()
 
 BOOL VCR_SetReadOnly(BOOL state)
 {
+	VCR_Message(M64MSG_INFO, state ? "Read only" : "Read write");
 	return VCR_readonly = state;
 }
 
@@ -196,7 +239,7 @@ int VCR_LoadMovieData(uint32_t* buf, unsigned len)
 {
 	if (!VCR_IsPlaying()) return -1; //don't try
 	uint32_t UID = *buf++;
-	uint32_t savedCurSample = *buf++; //consider this the last sample number available, we want to write/read from next one
+	uint32_t savedCurSample = *buf++; //consider this the sample number we want to write to (dont advance before writing)
 	uint32_t savedVI = *buf++;
 	uint32_t SampleCount = *buf++;
 	BUTTONS* inputs = (BUTTONS*)buf; //there are savedSampleNum+1 bytes of inputs, one frame is garbage, can be ignored (when loading old st ofc)
@@ -220,7 +263,7 @@ int VCR_LoadMovieData(uint32_t* buf, unsigned len)
 			return VCR_ST_INVALID_FRAME;
 		}
 	}
-	curSample = savedCurSample; //continue playing from next frame, no +1 because its 0 indexed
+	curSample = savedCurSample;
 	curVI = savedVI;
 	if (!VCR_IsReadOnly()) gMovieHeader->length_samples = savedCurSample; //this is done in getkeys anyway, but for safety do it here too
 
@@ -231,33 +274,32 @@ m64p_error VCR_StartMovie(char* path)
 {
 	//@TODO maybe switch to custom errors
 	if (VCR_IsPlaying()) return M64ERR_INTERNAL;
-	FILE *m64 = osal_file_open(path,"rb");
-	if (m64 == NULL)
+	gMovieFile = osal_file_open(path,"rb+"); //the m64 will be locked by mupen until vcr is stopped
+	if (gMovieFile == NULL)
 	{
 		char msg[1024] = "LoadM64 error: ";
 		strncat(msg, strerror(errno),sizeof(msg)- sizeof("LoadM64 error: "));
 		VCR_Message(M64MSG_INFO, msg);
 		return M64ERR_FILES;
 	}
-	gMovieHeader = new SMovieHeader; //@TODO move to heap if header will be needed in other places
-	fread(gMovieHeader,sizeof(SMovieHeader),1,m64);
+	gMovieHeader = new SMovieHeader;
+	fread(gMovieHeader,sizeof(SMovieHeader),1,gMovieFile);
 
 	//this should never happen under normal conditions, means code logic error
 	if (gMovieBuffer != NULL)
 	{
-		fclose(m64);
+		fclose(gMovieFile);
 		return M64ERR_INTERNAL;
 	}
 
 	//create a vector with enough space
 	gMovieBuffer = new std::vector<BUTTONS>(gMovieHeader->length_samples * gMovieHeader->num_controllers);
-	if (m64 == NULL)
+	if (gMovieBuffer == NULL)
 	{
-		fclose(m64);
+		fclose(gMovieFile);
 		return M64ERR_NO_MEMORY;
 	}
-	fread(gMovieBuffer->data(), sizeof(BUTTONS), gMovieBuffer->size(),m64);
-	fclose(m64);
+	fread(gMovieBuffer->data(), sizeof(BUTTONS), gMovieBuffer->size(), gMovieFile);
 
 	PrepareCore(path);
 
@@ -267,6 +309,70 @@ m64p_error VCR_StartMovie(char* path)
 	curSample = 0;
 	VCR_SetReadOnly(true);
 	VCR_Message(M64MSG_INFO, "Started playback");
+	return M64ERR_SUCCESS;
+}
+
+
+m64p_error VCR_StartRecording(char* path, char* author, char* desc, int startType)
+{
+	//call VCR_StopMovie yourself
+	if (VCR_IsPlaying()) return M64ERR_INTERNAL;
+	gMovieFile = osal_file_open(path, "wb+");
+	if (gMovieFile == NULL)
+	{
+		char msg[1024] = "SaveM64 error: ";
+		strncat(msg, strerror(errno), sizeof(msg) - sizeof("SaveM64 error: "));
+		VCR_Message(M64MSG_INFO, msg);
+		return M64ERR_FILES;
+	}
+
+	//this should never happen under normal conditions, means code logic error
+	if (gMovieBuffer != NULL)
+	{
+		fclose(gMovieFile);
+		return M64ERR_INTERNAL;
+	}
+
+	//create a vector with some space for start
+	gMovieBuffer = new std::vector<BUTTONS>(BUFFER_GROWTH);
+	if (gMovieBuffer == NULL)
+	{
+		fclose(gMovieFile);
+		return M64ERR_NO_MEMORY;
+	}
+
+	//header stuff
+	gMovieHeader = new SMovieHeader { 0, };
+	strncpy(gMovieHeader->authorInfo, author, MOVIE_AUTHOR_DATA_SIZE);
+	strncpy(gMovieHeader->description, desc, MOVIE_DESCRIPTION_DATA_SIZE);
+	gMovieHeader->authorInfo[MOVIE_AUTHOR_DATA_SIZE-1] = '\0';
+	gMovieHeader->description[MOVIE_DESCRIPTION_DATA_SIZE-1] = '\0';
+	gMovieHeader->startFlags = startType;
+	gMovieHeader->magic = M64_MAGIC;
+	gMovieHeader->version = M64_VERSION;
+	//get how many controllers are active, uhh idk if its stored somewhere already in core
+	//also writes present flags
+	//@TODO: rumblepak and mempak
+	unsigned count = 0;
+	for (unsigned i = 0; i < 4; i++)
+	{
+		count += Controls[i].Present;
+		gMovieHeader->cFlags.present |= (1<<i)&Controls[i].Present;
+	}
+	gMovieHeader->num_controllers = count;
+	//rom stuff
+	strcpy(gMovieHeader->romName, ROM_PARAMS.headername);
+	gMovieHeader->romCRC = ROM_HEADER.CRC1;
+	gMovieHeader->romCountry = ROM_HEADER.Country_code;
+	//@TODO: save all the rest of the info, plugins etc
+	VCR_SaveMovieHeader(gMovieFile, gMovieHeader);
+
+	strcpy(moviePath, path);
+	VCR_SetReadOnly(false);
+	VCR_state = VCR_ACTIVE;
+	curSample = 0;
+	PrepareCore(path);
+	VCR_Message(M64MSG_INFO, "Started Recording");
 	return M64ERR_SUCCESS;
 }
 

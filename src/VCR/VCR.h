@@ -115,6 +115,16 @@ BOOL VCR_IsReadOnly();
 BOOL VCR_SetReadOnly(BOOL state);
 
 /// <summary>
+/// Creates m64 at specified path and starts recording. Doesn't check if file exists, that's done by frontend
+/// </summary>
+/// <param name="path">path for new m64 (or existing, overwrites)</param>
+/// <param name="author">author max 222 chars, trimmed if too much</param>
+/// <param name="desc">256 max</param>
+/// <param name="startType">see macros in m64.h</param>
+/// /// <returns>M64ERR_FILES - something wrong with the path, otherwise M64ERR_SUCCESS</returns>
+m64p_error VCR_StartRecording(char* path, char* author, char* desc, int startType);
+
+/// <summary>
 /// Loads .m64 movie from path to an interal buffer and sets VCR state to VCR_PLAY.
 /// </summary>
 /// <param name="path">- path/to/movie.m64</param>

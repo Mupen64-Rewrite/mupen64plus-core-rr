@@ -515,7 +515,7 @@ void main_set_fastforward(int enable)
     {
         ff_state = 1; /* activate fast-forward */
         SavedSpeedFactor = l_SpeedFactor;
-        l_SpeedFactor = 250;
+        l_SpeedFactor = 10000;
         audio.setSpeedFactor(l_SpeedFactor);
         StateChanged(M64CORE_SPEED_FACTOR, l_SpeedFactor);
         // set fast-forward indicator

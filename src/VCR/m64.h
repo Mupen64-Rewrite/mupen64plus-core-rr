@@ -12,6 +12,9 @@
 #define MOVIE_AUTHOR_DATA_SIZE 222
 #define MOVIE_DESCRIPTION_DATA_SIZE 256
 
+#define M64_MAGIC (0x1a34364d) // M64\0x1a
+#define M64_VERSION (3) //if this is increased, mupen64rr 0.5 will silently fail and later crash, and new mupen will refuse to load it
+
 //#define MOVIE_MAX_METADATA_SIZE (MOVIE_DESCRIPTION_DATA_SIZE > MOVIE_AUTHOR_DATA_SIZE ? MOVIE_DESCRIPTION_DATA_SIZE : MOVIE_AUTHOR_DATA_SIZE)
 
 #pragma pack(push, 1)
@@ -31,9 +34,9 @@ typedef struct
 	uint16_t	startFlags; //1-snapshot, 2-clean start, 4-start but with savedata
 	uint16_t  reserved2;
 	struct{
-		uint8_t present;
-		uint8_t mempak;
-		uint8_t rumblepak;
+		uint8_t present; //bit 0 1 2 3, controller 1 2 3 4
+		uint8_t mempak; //4 5 6 7
+		uint8_t rumblepak; //8 9 10 11
 	} cFlags;
 	uint8_t reserved3;
 	uint32_t	reservedFlags[8];
