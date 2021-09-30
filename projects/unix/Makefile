@@ -605,7 +605,9 @@ endif
 
 # VCR
 ifeq ($(VCR_SUPPORT), 1)
+$(info VCR)
 SOURCE += $(SRCDIR)/VCR/VCR.cpp
+CFLAGS += -DVCR_SUPPORT
 endif
 
 # source files for optional features

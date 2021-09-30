@@ -1447,6 +1447,7 @@ m64p_error main_run(void)
         DebugMessage(M64MSG_ERROR, "M64 not loaded not epic");
     }
 #endif
+	DebugMessage(M64MSG_INFO,"                      TEST");
     size_t i, k;
     size_t rdram_size;
     uint32_t count_per_op;
@@ -1873,7 +1874,7 @@ void main_stop(void)
 #ifdef VCR_SUPPORT
     if (VCR_IsPlaying())
         //@TODO: ask user if they really want to
-        VCR_StopMovie(FALSE);
+        VCR_StopMovie(0);
 #endif
     DebugMessage(M64MSG_STATUS, "Stopping emulation.");
     if(l_msgPause)

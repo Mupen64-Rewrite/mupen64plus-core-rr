@@ -675,9 +675,9 @@ void event_sdl_keydown(int keysym, int keymod)
     else if (keymod & (KMOD_LSHIFT | KMOD_LCTRL))
     {
         if (keysym == sdl_keysym2native(SDLK_s))
-            VCR_StopMovie(FALSE);
+            VCR_StopMovie(0);
         else if (keysym == sdl_keysym2native(SDLK_d))
-            VCR_StopMovie(TRUE); //restart last
+            VCR_StopMovie(1); //restart last
         else if (keysym == sdl_keysym2native(SDLK_r))
             VCR_StartRecording("m64precord.m64","mupen64plus","created in m64p",MOVIE_START_FROM_NOTHING);
     }
