@@ -74,6 +74,7 @@
 #include "util.h"
 #ifdef VCR_SUPPORT
 #include "VCR/VCR.h"
+#include "VCR/m64.h"
 #endif
 
 /* version number for CoreEvents config section */
@@ -673,10 +674,16 @@ void event_sdl_keydown(int keysym, int keymod)
 #ifdef VCR_SUPPORT
     else if (keymod & (KMOD_LSHIFT | KMOD_LCTRL))
     {
-        if(keysym == sdl_keysym2native(SDLK_s))
+        if (keysym == sdl_keysym2native(SDLK_s))
             VCR_StopMovie(FALSE);
-        else if (keysym==sdl_keysym2native(SDLK_d))
+        else if (keysym == sdl_keysym2native(SDLK_d))
             VCR_StopMovie(TRUE); //restart last
+        else if (keysym == sdl_keysym2native(SDLK_r))
+            VCR_StartRecording("m64precord.m64","mupen64plus","created in m64p",MOVIE_START_FROM_NOTHING);
+    }
+    else if (keysym == sdl_keysym2native(SDLK_PERIOD))
+    {
+        VCR_SetReadOnly(!VCR_IsReadOnly());
     }
 #endif
     else
