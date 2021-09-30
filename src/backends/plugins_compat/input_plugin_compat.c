@@ -158,7 +158,7 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, BOOL is
 
     *input_ = keys.Value;
 #ifdef VCR_SUPPORT
-    if (VCR_IsPlaying() && !VCR_IsReadOnly())
+    if (VCR_IsPlaying() && !VCR_IsReadOnly() && !is_test)
     {
         VCR_SetKeys(keys, cin_compat->control_id);
     }
