@@ -57,6 +57,7 @@ static int is_button_released(uint32_t input, uint32_t last_input, uint32_t mask
         && ((last_input & mask) != 0);
 }
 
+#ifdef VCR_SUPPORT
 //test, remove later
 void displaykeys(BUTTONS keys)
 {
@@ -67,9 +68,10 @@ void displaykeys(BUTTONS keys)
     if (keys.B_BUTTON) strcat(input, "B");
     DebugMessage(M64MSG_INFO, "%d: %s x:%d y:%d", VCR_GetCurFrame(), input, keys.X_AXIS, keys.Y_AXIS);
 }
+#endif
 
 //Note: I added a parameter is_test to tell VCR not to read a frame when a fake pool happens
-static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, BOOL is_test)
+static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, int is_test)
 {
     struct controller_input_compat* cin_compat = (struct controller_input_compat*)opaque;
     BUTTONS keys = { 0 };

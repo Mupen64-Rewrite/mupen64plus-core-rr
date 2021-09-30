@@ -194,14 +194,14 @@ static void savestates_clear_job(void)
     do { type x = value; PUTARRAY(&x, buff, type, 1); } while(0)
 
 //returns false on failure
-static BOOL readQueue(gzFile* f, char** queue)
+static int readQueue(gzFile f, char queue[1024])
 {
     for (unsigned i = 0; i <= 1024/4; i++)
     {
         gzread(f, queue + i, 4);
-        if (*((unsigned long*)queue + i) == 0xFFFFFFFF) return TRUE;
+        if (*((unsigned long*)queue + i) == 0xFFFFFFFF) return 1;
     }
-    return FALSE;
+    return 0;
 }
 
 static int savestates_load_m64p(struct device* dev, char *filepath)
@@ -289,7 +289,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
     if (version == 0x00010000) /* original savestate version */
     {
         if (gzread(f, savestateData, savestateSize) != (int)savestateSize ||
-            !readQueue(f,&queue))
+            !readQueue(f,queue))
         {
             main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Could not read Mupen64Plus savestate 1.0 data from %s", filepath);
             free(savestateData);
@@ -1626,7 +1626,9 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     {
         free(save->filepath);
         free(save);
+#ifdef VCR_SUPPORT
         free(VCRbuf);
+#endif
         main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Insufficient memory to save state.");
         return 0;
     }
@@ -1847,7 +1849,9 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     PUTDATA(curr, uint32_t, 0);
 #endif
 
+#ifdef VCR_SUPPORT
     int off = curr - save->data; //last offset...
+#endif
     PUTDATA(curr, uint32_t, dev->ai.last_read);
     PUTDATA(curr, uint32_t, dev->ai.delayed_carry);
 
