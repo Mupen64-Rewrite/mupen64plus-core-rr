@@ -14,6 +14,7 @@ extern "C" {
 #include "api/m64p_types.h"
 #include "api/callbacks.h"
 #include "api/m64p_plugin.h" //for BUTTON struct
+#include "api/m64p_vcr.h"
 #include "osal/files.h"
 #include "main/main.h"
 #include "plugin/plugin.h" //for controls
