@@ -141,8 +141,4 @@ typedef m64p_error (*ptr_VCR_StartMovie)(char* path);
 }
 #endif
 
-<<<<<<< HEAD
 #endif
-=======
-#endif  /* #define M64P_VCR_H */
->>>>>>> 1c4552e8 (add API header for VCR pointers)
