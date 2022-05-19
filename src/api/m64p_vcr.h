@@ -50,7 +50,7 @@ typedef BOOL(*MsgFunc)(m64p_msg_level lvl, const char*);
 /// </summary>
 /// <param name="dest">pointer to pointer to buffer</param>
 /// <returns>Length of buffer in bytes</returns>
-typedef size_t(*ptr_VCR_CollectSTData)(uint32_t** dest);
+typedef size_t (*ptr_VCR_CollectSTData)(uint32_t** dest);
 EXPORT size_t CALL VCR_CollectSTData(uint32_t** dest);
 
 /// <summary>
@@ -80,6 +80,7 @@ typedef enum
 /// Returns current frame, 0-indexed, accounts for controller;
 /// </summary>
 /// <returns>current frame number, or -1 if nothing is being played</returns>
+typedef unsigned (*ptr_VCR_GetCurFrame)();
 EXPORT unsigned CALL VCR_GetCurFrame();
 
 /// <summary>
@@ -103,21 +104,23 @@ EXPORT void CALL VCR_SetKeys(BUTTONS keys, unsigned channel);
 /// <param name="keys">place where to paste inputs</param>
 /// <param name="channel">controller id</param>
 /// <returns>true if movie ended</returns>
-typedef BOOL(*ptr_VCR_GetKeys)(BUTTONS* keys, unsigned channel);
+typedef BOOL (*ptr_VCR_GetKeys)(BUTTONS* keys, unsigned channel);
 EXPORT BOOL CALL VCR_GetKeys(BUTTONS* keys, unsigned channel);
 
 /// <summary>
 /// Checks if a movie is playing
 /// </summary>
 /// <returns>false if idle, otherwise true</returns>
+typedef BOOL (*ptr_VCR_IsPlaying)(void);
 EXPORT BOOL CALL VCR_IsPlaying();
 
 /// <summary>
 /// Checks if readonly is true. Note: the value doesn't make sense if VCR is idle, it doesn't inform whether a movie is actually playing
 /// </summary>
-/// <see cref="VCR_IsPlaying"/>
+/// <see cref="VCR_IsReadOnly"/>
 /// <returns>true or false</returns>
-EXPORT BOOL CALL VCR_IsPlaying();
+typedef BOOL (*ptr_IsReadOnly)(void);
+EXPORT BOOL CALL VCR_IsReadOnly();
 
 
 /// <summary>
@@ -125,7 +128,7 @@ EXPORT BOOL CALL VCR_IsPlaying();
 /// </summary>
 /// <param name="state">true or false</param>
 /// <returns>state</returns>
-typedef BOOL(*ptr_VCR_SetReadOnly)(BOOL state);
+typedef BOOL (*ptr_VCR_SetReadOnly)(BOOL state);
 EXPORT BOOL CALL VCR_SetReadOnly(BOOL state);
 
 /// <summary>
@@ -144,6 +147,7 @@ EXPORT m64p_error CALL VCR_StartRecording(char* path, char* author, char* desc, 
 /// </summary>
 /// <param name="path">- path/to/movie.m64</param>
 /// <returns>M64ERR_FILES - .m64 or .st not found, M64ERR_NO_MEMORY - out of memory, M64ERR_INTERNAL - buffer already exists, otherwise M64ERR_SUCCESS</returns>
+typedef m64p_error (*ptr_VCR_StartMovie)(char* path);
 EXPORT m64p_error CALL VCR_StartMovie(char* path);
 
 #ifdef __cplusplus
