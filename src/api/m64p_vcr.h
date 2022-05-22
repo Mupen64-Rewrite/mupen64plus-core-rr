@@ -147,8 +147,8 @@ EXPORT m64p_error CALL VCR_StartRecording(char* path, char* author, char* desc, 
 /// </summary>
 /// <param name="path">- path/to/movie.m64</param>
 /// <returns>M64ERR_FILES - .m64 or .st not found, M64ERR_NO_MEMORY - out of memory, M64ERR_INTERNAL - buffer already exists, otherwise M64ERR_SUCCESS</returns>
-typedef m64p_error (*ptr_VCR_StartMovie)(char* path);
-EXPORT m64p_error CALL VCR_StartMovie(char* path);
+typedef m64p_error (*ptr_VCR_StartMovie)(const char* path);
+EXPORT m64p_error CALL VCR_StartMovie(const char* path);
 
 #ifdef __cplusplus
 }
