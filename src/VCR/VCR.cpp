@@ -66,7 +66,7 @@ void VCR_SetErrorCallback(MsgFunc callb)
 /// Its used in start, restart and start recording, so its handy to have it as a helper function.
 /// </summary>
 /// <param name="path"> path to .m64 to find the st</param>
-static void PrepareCore(char* path)
+static void PrepareCore(const char* path)
 {
 	if (gMovieHeader->startFlags == MOVIE_START_FROM_NOTHING)
 	{
@@ -271,7 +271,7 @@ int VCR_LoadMovieData(uint32_t* buf, unsigned len)
 	return VCR_ST_SUCCESS;
 }
 
-m64p_error VCR_StartMovie(char* path)
+m64p_error VCR_StartMovie(const char* path)
 {
 	//@TODO maybe switch to custom errors
 	if (VCR_IsPlaying()) return M64ERR_INTERNAL;
@@ -383,4 +383,3 @@ m64p_error VCR_StartRecording(char* path, char* author, char* desc, int startTyp
 //else no play
 //
 //========== Build: 0 succeeded, 1 failed, 0 skipped ==========
-
