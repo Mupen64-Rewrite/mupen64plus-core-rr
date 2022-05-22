@@ -187,10 +187,6 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 		}
 		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame
 	}
-	if (curSample == 200)
-	{
-		main_state_load("loadthis.st");
-	}
 	return false;
 }
 

@@ -164,10 +164,6 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, int is_
     {
         VCR_SetKeys(keys, cin_compat->control_id);
     }
-    if (VCR_IsPlaying() && !is_test)
-    {
-        displaykeys(keys);
-    }
 #endif
     return M64ERR_SUCCESS;
 }
