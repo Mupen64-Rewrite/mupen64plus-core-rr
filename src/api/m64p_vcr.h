@@ -119,7 +119,7 @@ EXPORT BOOL CALL VCR_IsPlaying();
 /// </summary>
 /// <see cref="VCR_IsReadOnly"/>
 /// <returns>true or false</returns>
-typedef BOOL (*ptr_IsReadOnly)(void);
+typedef BOOL (*ptr_VCR_IsReadOnly)(void);
 EXPORT BOOL CALL VCR_IsReadOnly();
 
 
