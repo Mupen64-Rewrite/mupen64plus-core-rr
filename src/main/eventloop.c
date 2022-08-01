@@ -122,6 +122,7 @@ typedef enum {joyFullscreen,
               joyGameshark
 } eJoyCommand;
 
+#ifndef NO_KEYBINDINGS
 static const char *JoyCmdName[] = { "Joy Mapping Fullscreen",
                                     "Joy Mapping Stop",
                                     "Joy Mapping Pause",
@@ -143,6 +144,7 @@ static const int NumJoyCommands = sizeof(JoyCmdName) / sizeof(const char *);
 
 static int JoyCmdActive[16][2];  /* if extra joystick commands are added above, make sure there is enough room in this array */
                                  /* [i][0] is Command Active, [i][1] is Hotkey Active */
+#endif /* NO_KEYBINDINGS */
 
 static int GamesharkActive = 0;
 
@@ -150,6 +152,7 @@ static int GamesharkActive = 0;
 * static functions for eventloop.c
 */
 
+#ifndef NO_KEYBINDINGS
 /** MatchJoyCommand
  *    This function processes an SDL event and updates the JoyCmdActive array if the
  *    event matches with the given command.
@@ -299,13 +302,16 @@ static int MatchJoyCommand(const SDL_Event *event, eJoyCommand cmd)
     /* nothing found */
     return 0;
 }
+#endif /* NO_KEYBINDINGS */
 
 /*********************************************************************************************************
 * sdl event filter
 */
 static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 {
+#ifndef NO_KEYBINDINGS
     int cmd, action;
+#endif /* NO_KEYBINDINGS */
     static int confirm = 0;
 
     switch(event->type)
@@ -375,6 +381,7 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 #endif
 #endif
 
+#ifndef NO_KEYBINDINGS
         // if joystick action is detected, check if it's mapped to a special function
         case SDL_JOYAXISMOTION:
         case SDL_JOYBUTTONDOWN:
@@ -429,6 +436,8 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 
             return 0;
             break;
+#endif /* NO_KEYBINDINGS */
+
     }
 
     return 1;  // add this event to SDL queue
@@ -440,6 +449,7 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 
 void event_initialize(void)
 {
+#ifndef NO_KEYBINDINGS
     int i, j;
 
     /* set initial state of all joystick commands to 'off' */
@@ -506,6 +516,8 @@ void event_initialize(void)
             } /* Iterate over comma-separated config phrases */
         }
     }
+#endif /* NO_KEYBINDINGS */
+
 
     /* set up SDL event filter and disable key repeat */
 #if !SDL_VERSION_ATLEAST(2,0,0)
