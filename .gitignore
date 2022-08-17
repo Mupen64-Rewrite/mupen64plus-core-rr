@@ -1,5 +1,6 @@
 /projects/unix/_obj*/
 /projects/unix/libmupen64plus*.so*
+/projects/unix/compile_commands.json
 /.vs/mupen64plus-core-rr/v16
 /.vs
 /projects/msvc/.vs/mupen64plus-core/v16
@@ -10,4 +11,8 @@
 compile_commands.json
 .cache/
 /tools
+
 *.vcxproj.user
+/.vscode/
+!/.vscode/settings.json
+.cache/

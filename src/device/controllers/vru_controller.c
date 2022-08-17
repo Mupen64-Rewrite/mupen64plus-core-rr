@@ -100,7 +100,7 @@ static void process_vru_command(void* jbd,
     uint8_t cmd = tx_buf[0];
 
     /* if controller can't successfully be polled, consider it to be absent */
-    if (cont->icin->get_input(cont->cin, &input_) != M64ERR_SUCCESS) {
+    if (cont->icin->get_input(cont->cin, &input_, 0) != M64ERR_SUCCESS) {
         *rx |= 0x80;
         return;
     }

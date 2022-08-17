@@ -53,6 +53,7 @@
 #include "workqueue.h"
 #ifdef VCR_SUPPORT
 #include "VCR/VCR.h"
+#include "api/m64p_vcr.h"
 #define VCR_STOP VCR_StopMovie(0);
 #else
 #define VCR_STOP //no action
@@ -1611,10 +1612,10 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     save_eventqueue_infos(&dev->r4300.cp0, queue);
 
     // Allocate memory for the save state data
-    //prepare buffer
+    // prepare buffer
 #ifdef VCR_SUPPORT
     size_t VCRlen = 0;
-    uint32_t* VCRbuf;
+    uint32_t* VCRbuf = NULL;
     if (VCR_IsPlaying())
     {
         VCRlen = VCR_CollectSTData(&VCRbuf);
