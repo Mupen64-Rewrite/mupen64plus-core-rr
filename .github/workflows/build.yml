@@ -230,7 +230,7 @@ jobs:
           md backup
           for %%B in (Release New_Dynarec_Release) do (
             echo.
-            msbuild "projects\msvc\mupen64plus-core.vcxproj" /p:Configuration=%%B;Platform=%ARCH%;PlatformToolset=${{ matrix.toolset }} /t:Rebuild
+            msbuild "projects\msvc\mupen64plus-core-rr.vcxproj" /p:Configuration=%%B;Platform=%ARCH%;PlatformToolset=${{ matrix.toolset }} /t:Rebuild
             echo.
             copy "projects\msvc\%ARCH%\%%B\mupen64plus.dll" backup\
             if not exist "backup\mupen64plus-old.dll" (

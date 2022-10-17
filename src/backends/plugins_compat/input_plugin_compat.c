@@ -31,6 +31,7 @@
 
 #ifdef VCR_SUPPORT
 #include "VCR/VCR.h"
+#include "api/m64p_vcr.h"
 #endif
 
 #include <stdint.h>
