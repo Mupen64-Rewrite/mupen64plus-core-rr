@@ -654,7 +654,9 @@ endif
 # Encoder
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
-SOURCE += $(SRCDIR)/encoder/utils.c
+SOURCE += \
+	$(SRCDIR)/api/encoder.c
+	$(SRCDIR)/encoder/utils.c
 CFLAGS += -DENC_SUPPORT
 endif
 
@@ -797,7 +799,7 @@ targets:
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
 	@echo "    VCR_SUPPORT=1  == Enables VCR support"
-	@echo "    VCR_SUPPORT=1  == Enables VCR support"
+	@echo "    ENC_SUPPORT=1  == Enables encoder support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"

@@ -1,7 +1,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *   Mupen64plus-core - m64p_vcr.h                                         *
+ *   Mupen64plus - encoder/backend.h                                       *
  *   Mupen64Plus homepage: https://mupen64plus.org/                        *
- *   Copyright (C) 2024 Jacky Guo                                          *
+ *   Copyright (C) 2023 Jacky Guo                                          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -18,42 +18,40 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.          *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+#ifndef M64P_BACKENDS_ENCODER_BACKEND_H
+#define M64P_BACKENDS_ENCODER_BACKEND_H
 
-/* This header file defines typedefs for function pointers to encoder
- * functions.
- */
+#include "api/m64p_types.h"
 
-#include <stdint.h>
-#include "m64p_types.h"
+struct encoder_backend_interface {
+  /**
+   * Backend format, as in the enum.
+   */
+  const m64p_encoder_format format;
+  
+  /**
+   * Initialize a backend instance. The handle is returned via obj.
+   * This must be freed later, either by discard() or save().
+   */
+  m64p_error (*init)(void** self, const char* path, intptr_t hints[]);
+  
+  /**
+   * Called every VI to dump a frame.
+   */
+  m64p_error (*encode_vi)(void* self, void* frame);
+  /**
+   * Frees the encoder backend, discarding all encoded data.
+   */
+  void (*discard)(void* self);
+  /**
+   * Frees the encoder backend, saving the encoded data to the path provided at init().
+   */
+  m64p_error (*save)(void* self);
+};
 
-#ifndef BOOL
-  #define BOOL int
+/* collection of available encoder backends */
+extern const struct encoder_backend_interface* g_encoder_backend_interfaces[];
+/* helper function to find backend by format */
+const struct encoder_backend_interface* get_video_capture_backend(m64p_encoder_format name);
+
 #endif
-
-#define M64P_API_FN(RT, name, ...) \
-  EXPORT RT name(__VA_ARGS__); \
-  typedef RT (*ptr_##name)(__VA_ARGS__)
-
-/**
- * Sets a hint to the encoder.
- */
-M64P_API_FN(void, Encoder_Hint, m64p_encoder_hint setting, intptr_t value);
-/**
- * Returns 1 if the encoder is active, 0 otherwise.
- */
-M64P_API_FN(BOOL, Encoder_IsActive);
-
-/**
- * Starts the encoder.
- */
-M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format format);
-/**
- * Stops the encoder, discarding any recorded data.
- */
-M64P_API_FN(m64p_error, Encoder_Discard);
-/**
- * Stops the encoder, saving all recorded frames to a video file.
- */
-M64P_API_FN(m64p_error, Encoder_SaveVideo);
-
-#undef M64P_API_FN

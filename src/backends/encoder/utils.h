@@ -1,5 +1,5 @@
-#ifndef M64P_ENCODER_UTILS_H
-#define M64P_ENCODER_UTILS_H
+#ifndef M64P_BACKENDS_ENCODER_UTILS_H
+#define M64P_BACKENDS_ENCODER_UTILS_H
 
 #include "api/m64p_types.h"
 #include <stddef.h>

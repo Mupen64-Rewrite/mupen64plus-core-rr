@@ -29,8 +29,13 @@
 
 /* necessary headers */
 #include <stdint.h>
+#include <stddef.h>
 #if defined(WIN32)
   #include <windows.h>
+  typedef ssize_t SSIZE_T
+#endif
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+  #include <sys/types.h>
 #endif
 
 /* DLL handles and function declaration specifiers */
@@ -459,9 +464,10 @@ typedef enum {
   M64FMT_WEBM,
 } m64p_encoder_format;
 
-typedef enum {
-  M64ENC_NULL = 0
-} m64p_encoder_setting;
+typedef enum : ssize_t {
+  M64ENC_NULL = -1,
+  M64ENC_NUM_VALUES,
+} m64p_encoder_hint;
 
 #endif
 
