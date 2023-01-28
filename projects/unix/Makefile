@@ -630,9 +630,15 @@ endif
 
 # VCR
 ifeq ($(VCR_SUPPORT), 1)
-$(info VCR)
+$(info VCR support enabled)
 SOURCE += $(SRCDIR)/VCR/VCR.cpp
 CFLAGS += -DVCR_SUPPORT
+endif
+
+# Encoder
+ifeq ($(ENC_SUPPORT), 1)
+$(info Encoder support enabled)
+CFLAGS += -DENC_SUPPORT
 endif
 
 # source files for optional features
@@ -773,6 +779,7 @@ targets:
 	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
+	@echo "    VCR_SUPPORT=1  == Enables VCR support"
 	@echo "    VCR_SUPPORT=1  == Enables VCR support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"

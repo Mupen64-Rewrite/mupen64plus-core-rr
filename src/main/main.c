@@ -1942,7 +1942,7 @@ void main_stop(void)
 
 #ifdef VCR_SUPPORT
     if (VCR_IsPlaying())
-        //@TODO: ask user if they really want to
+        // frontend should handle prompts to stop.
         VCR_StopMovie(0);
 #endif
     DebugMessage(M64MSG_STATUS, "Stopping emulation.");
