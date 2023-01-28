@@ -22,33 +22,38 @@
 /* This header file defines typedefs for function pointers to encoder
  * functions.
  */
- 
-#include "m64p_types.h"
+
 #include <stdint.h>
+#include "m64p_types.h"
 
 #ifndef BOOL
-#define BOOL int
+  #define BOOL int
 #endif
 
+#define M64P_API_FN(RT, name, ...) \
+  EXPORT RT name(__VA_ARGS__); \
+  typedef RT (*ptr_##name)(__VA_ARGS__)
 
 /**
  * Sets a hint to the encoder.
  */
-EXPORT void Encoder_Hint(m64p_encoder_setting setting, intptr_t value);
+M64P_API_FN(void, Encoder_Hint, m64p_encoder_setting setting, intptr_t value);
 /**
  * Returns 1 if the encoder is active, 0 otherwise.
  */
-EXPORT BOOL Encoder_IsActive();
+M64P_API_FN(BOOL, Encoder_IsActive);
 
 /**
  * Starts the encoder.
  */
-EXPORT m64p_error Encoder_Start(const char* out_path, m64p_encoder_format format);
+M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format format);
 /**
  * Stops the encoder, discarding any recorded data.
  */
-EXPORT m64p_error Encoder_Discard();
+M64P_API_FN(m64p_error, Encoder_Discard);
 /**
  * Stops the encoder, saving all recorded frames to a video file.
  */
-EXPORT m64p_error Encoder_SaveVideo();
+M64P_API_FN(m64p_error, Encoder_SaveVideo);
+
+#undef M64P_API_FN

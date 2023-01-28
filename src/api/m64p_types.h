@@ -446,17 +446,17 @@ typedef struct {
   uint32_t      (*VidExtFuncGLGetDefaultFramebuffer)(void);
 } m64p_video_extension_functions;
 
-
-#define ENC_SUPPORT
 #ifdef ENC_SUPPORT
 /* ------------------------------------------------- */
 /* Structures and Types for Video Encoder API        */
 /* ------------------------------------------------- */
 typedef enum {
   // Assumes based on file extension.
-  M64FMT_INFER = 0,
-  // Specific formats
+  M64FMT_NULL = 0,
+  // .mp4 H.264/AAC
   M64FMT_MP4,
+  // .webm
+  M64FMT_WEBM,
 } m64p_encoder_format;
 
 typedef enum {

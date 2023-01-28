@@ -349,6 +349,22 @@ ifeq ($(OPENCV), 1)
   LDLIBS += $(OPENCV_LDLIBS)
 endif
 
+
+ifeq ($(ENC_SUPPORT), 1)
+  # FFmpeg libraries
+  FFMPEG_LIBS := libavutil libavcodec libavformat libswscale
+  ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
+    # ensure all required libraries are found
+    ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIBS) 2>/dev/null),)
+      $(error No FFmpeg development libraries found!)
+    endif
+    FFMPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(FFMPEG_LIBS))
+    FFMPEG_LDLIBS += $(shell $(PKG_CONFIG) --libs $(FFMPEG_LIBS))
+  endif
+  CFLAGS += $(FFMPEG_CFLAGS)
+  LDLIBS += $(FFMPEG_LDLIBS)
+endif
+
 # test for presence of SDL
 ifeq ($(origin SDL_CFLAGS) $(origin SDL_LDLIBS), undefined undefined)
   SDL_CONFIG = $(CROSS_COMPILE)sdl2-config
@@ -638,6 +654,7 @@ endif
 # Encoder
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
+SOURCE += $(SRCDIR)/encoder/utils.c
 CFLAGS += -DENC_SUPPORT
 endif
 
