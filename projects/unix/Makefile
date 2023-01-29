@@ -352,7 +352,7 @@ endif
 
 ifeq ($(ENC_SUPPORT), 1)
   # FFmpeg libraries
-  FFMPEG_LIBS := libavutil libavcodec libavformat libswscale
+  FFMPEG_LIBS := libavutil libavcodec libavformat libswscale libswresample
   ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
     # ensure all required libraries are found
     ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIBS) 2>/dev/null),)
@@ -655,8 +655,9 @@ endif
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
 SOURCE += \
-	$(SRCDIR)/api/encoder.c
-	$(SRCDIR)/encoder/utils.c
+	$(SRCDIR)/backends/encoder/utils.c \
+	$(SRCDIR)/backends/encoder/backend.c \
+	$(SRCDIR)/backends/encoder/ffmpeg.c
 CFLAGS += -DENC_SUPPORT
 endif
 

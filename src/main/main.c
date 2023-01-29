@@ -850,7 +850,11 @@ void new_frame(void)
 {
     if (g_FrameCallback != NULL)
         (*g_FrameCallback)(l_CurrentFrame);
-
+    
+    #ifdef ENC_SUPPORT
+    // TODO:ENC pass frame to encoder
+    #endif
+    
     /* advance the current frame */
     l_CurrentFrame++;
 

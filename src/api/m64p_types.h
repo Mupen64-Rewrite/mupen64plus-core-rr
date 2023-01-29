@@ -457,14 +457,14 @@ typedef struct {
 /* ------------------------------------------------- */
 typedef enum {
   // Assumes based on file extension.
-  M64FMT_NULL = 0,
+  M64FMT_NULL = -1,
   // .mp4 H.264/AAC
   M64FMT_MP4,
   // .webm
   M64FMT_WEBM,
 } m64p_encoder_format;
 
-typedef enum : ssize_t {
+typedef enum {
   M64ENC_NULL = -1,
   M64ENC_NUM_VALUES,
 } m64p_encoder_hint;

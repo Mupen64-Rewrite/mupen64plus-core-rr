@@ -78,8 +78,12 @@ static void do_dma(struct ai_controller* ai, struct ai_dma* dma)
         unsigned int frequency = (ai->regs[AI_DACRATE_REG] == 0)
             ? 44100 /* default sample rate */
             : ai->vi->clock / (1 + ai->regs[AI_DACRATE_REG]);
-
+        
         ai->iaout->set_frequency(ai->aout, frequency);
+        
+        #ifdef ENC_SUPPORT
+        // TODO:ENC set encoder frequency
+        #endif
 
         ai->samples_format_changed = 0;
     }
@@ -177,6 +181,9 @@ void read_ai_regs(void* opaque, uint32_t address, uint32_t* value)
             unsigned int diff = ai->fifo[0].length - ai->last_read;
             unsigned char *p = (unsigned char*)&ai->ri->rdram->dram[ai->fifo[0].address/4];
             ai->iaout->push_samples(ai->aout, p + diff, ai->last_read - *value);
+            #ifdef ENC_SUPPORT
+            // TODO:ENC push audio samples to backend
+            #endif
             ai->last_read = *value;
         }
     }
@@ -228,10 +235,12 @@ void ai_end_of_dma_event(void* opaque)
         unsigned int diff = ai->fifo[0].length - ai->last_read;
         unsigned char *p = (unsigned char*)&ai->ri->rdram->dram[ai->fifo[0].address/4];
         ai->iaout->push_samples(ai->aout, p + diff, ai->last_read);
+        #ifdef ENC_SUPPORT
+        // TODO:ENC push audio samples to backend
+        #endif
         ai->last_read = 0;
     }
 
     fifo_pop(ai);
     raise_rcp_interrupt(ai->mi, MI_INTR_AI);
 }
-

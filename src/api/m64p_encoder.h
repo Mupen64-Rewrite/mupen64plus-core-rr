@@ -35,25 +35,17 @@
   typedef RT (*ptr_##name)(__VA_ARGS__)
 
 /**
- * Sets a hint to the encoder.
- */
-M64P_API_FN(void, Encoder_Hint, m64p_encoder_hint setting, intptr_t value);
-/**
  * Returns 1 if the encoder is active, 0 otherwise.
  */
 M64P_API_FN(BOOL, Encoder_IsActive);
-
 /**
- * Starts the encoder.
+ * Starts the encoder. Any encoder settings go through config. Names will be documented later.
+ * If this function raises an error, no encode will be started.
  */
 M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format format);
 /**
- * Stops the encoder, discarding any recorded data.
+ * Stops the encoder. If discard is true, discards data.
  */
-M64P_API_FN(m64p_error, Encoder_Discard);
-/**
- * Stops the encoder, saving all recorded frames to a video file.
- */
-M64P_API_FN(m64p_error, Encoder_SaveVideo);
+M64P_API_FN(m64p_error, Encoder_Stop, BOOL discard);
 
 #undef M64P_API_FN

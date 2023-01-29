@@ -22,36 +22,25 @@
 #define M64P_BACKENDS_ENCODER_BACKEND_H
 
 #include "api/m64p_types.h"
+#include <stdbool.h>
 
 struct encoder_backend_interface {
-  /**
-   * Backend format, as in the enum.
-   */
-  const m64p_encoder_format format;
-  
-  /**
-   * Initialize a backend instance. The handle is returned via obj.
-   * This must be freed later, either by discard() or save().
-   */
-  m64p_error (*init)(void** self, const char* path, intptr_t hints[]);
-  
-  /**
-   * Called every VI to dump a frame.
-   */
-  m64p_error (*encode_vi)(void* self, void* frame);
-  /**
-   * Frees the encoder backend, discarding all encoded data.
-   */
-  void (*discard)(void* self);
-  /**
-   * Frees the encoder backend, saving the encoded data to the path provided at init().
-   */
-  m64p_error (*save)(void* self);
-};
+    /**
+     * Initialize a backend instance. The handle is returned via obj.
+     * This must be freed later, either by discard() or save().
+     * If this function raises an error, the value will be deallocated.
+     */
+    m64p_error (*init)(void** self, const char* path, m64p_encoder_format fmt);
 
-/* collection of available encoder backends */
-extern const struct encoder_backend_interface* g_encoder_backend_interfaces[];
-/* helper function to find backend by format */
-const struct encoder_backend_interface* get_video_capture_backend(m64p_encoder_format name);
+    /**
+     * Called every VI to dump a frame. This should call gfx.readScreen.
+     */
+    m64p_error (*encode_frame)(void* self);
+
+    /**
+     * Frees the encoder backend. If discard is true, then encoder data should be
+     */
+    void (*free)(void* self, bool discard);
+};
 
 #endif
