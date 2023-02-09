@@ -160,7 +160,7 @@ SUBDIR = ../../subprojects
 OPTFLAGS ?= -O3 -flto
 WARNFLAGS ?= -Wall
 CFLAGS += -fno-strict-aliasing -fvisibility=hidden -I$(SRCDIR) -I$(SRCDIR)/asm_defines -DM64P_PARALLEL
-CXXFLAGS += -fvisibility-inlines-hidden
+CXXFLAGS += -fvisibility-inlines-hidden -std=c++17
 LDLIBS +=  -lm
 
 # Since we are building a shared library, we must compile with -fPIC on some architectures
@@ -352,17 +352,32 @@ endif
 
 ifeq ($(ENC_SUPPORT), 1)
   # FFmpeg libraries
-  FFMPEG_LIBS := libavutil libavcodec libavformat libswscale libswresample
+  FFMPEG_LIB_NAMES := libavutil libavcodec libavformat libswscale libswresample
   ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
     # ensure all required libraries are found
-    ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIBS) 2>/dev/null),)
+    ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIB_NAMES) 2>/dev/null),)
       $(error No FFmpeg development libraries found!)
     endif
-    FFMPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(FFMPEG_LIBS))
-    FFMPEG_LDLIBS += $(shell $(PKG_CONFIG) --libs $(FFMPEG_LIBS))
+    FFMPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(FFMPEG_LIB_NAMES))
+    FFMPEG_LDLIBS += $(shell $(PKG_CONFIG) --libs $(FFMPEG_LIB_NAMES))
   endif
   CFLAGS += $(FFMPEG_CFLAGS)
   LDLIBS += $(FFMPEG_LDLIBS)
+  
+	# avcpp library
+  ifeq ($(origin AVCPP_CFLAGS) $(origin AVCPP_LDLIBS), undefined undefined)
+    ifeq ($(shell $(PKG_CONFIG) --modversion libavcpp 2>/dev/null),)
+      CFLAGS += -I$(SUBDIR)/avcpp/include
+      AVCPP_SOURCE = \
+        $(wildcard $(SUBDIR)/avcpp/src/*.cpp) \
+        $(wildcard $(SUBDIR)/avcpp/src/*.h)
+		else
+			AVCPP_CFLAGS += $(shell $(PKG_CONFIG) --cflags libavcpp)
+			AVCPP_LDLIBS += $(shell $(PKG_CONFIG) --libs libavcpp)
+    endif
+  endif
+  CFLAGS += $(AVCPP_CFLAGS)
+  LDLIBS += $(AVCPP_LDLIBS)
 endif
 
 # test for presence of SDL
@@ -602,7 +617,8 @@ SOURCE = \
     $(SRCDIR)/plugin/dummy_audio.c \
     $(SRCDIR)/plugin/dummy_input.c \
     $(SRCDIR)/plugin/dummy_rsp.c \
-    $(MINIZIP_SOURCE)
+    $(MINIZIP_SOURCE) \
+		$(AVCPP_SOURCE)
 
 # MD5 lib
 SOURCE += \
@@ -654,10 +670,10 @@ endif
 # Encoder
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
-SOURCE += \
-	$(SRCDIR)/backends/encoder/utils.c \
-	$(SRCDIR)/backends/encoder/backend.c \
-	$(SRCDIR)/backends/encoder/ffmpeg.c
+# SOURCE += \
+# 	$(SRCDIR)/backends/encoder/utils.c \
+# 	$(SRCDIR)/backends/encoder/backend.c \
+# 	$(SRCDIR)/backends/encoder/ffmpeg.c
 CFLAGS += -DENC_SUPPORT
 endif
 

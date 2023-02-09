@@ -33,12 +33,22 @@ struct encoder_backend_interface {
     m64p_error (*init)(void** self, const char* path, m64p_encoder_format fmt);
 
     /**
-     * Called every VI to dump a frame. This should call gfx.readScreen.
+     * Called every VI to encode a frame. This should call gfx.readScreen.
      */
-    m64p_error (*encode_frame)(void* self);
+    m64p_error (*push_video)(void* self);
+    
+    /**
+     * Called to set the audio sample rate.
+     */
+    m64p_error (*set_sample_rate)(void* self, unsigned int rate);
+    
+    /**
+     * Called to encode audio samples.
+     */
+    m64p_error (*push_audio)(void* self, void* samples, size_t len);
 
     /**
-     * Frees the encoder backend. If discard is true, then encoder data should be
+     * Frees the encoder backend. If discard is true, then it should not save the file.
      */
     void (*free)(void* self, bool discard);
 };
