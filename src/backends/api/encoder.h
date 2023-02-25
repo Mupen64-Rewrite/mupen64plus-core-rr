@@ -23,7 +23,9 @@
 
 #include "api/m64p_types.h"
 #include <stdbool.h>
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 struct encoder_backend_interface {
     /**
      * Initialize a backend instance. The handle is returned via obj.
@@ -52,5 +54,8 @@ struct encoder_backend_interface {
      */
     void (*free)(void* self, bool discard);
 };
+#ifdef __cplusplus
+}
+#endif
 
 #endif

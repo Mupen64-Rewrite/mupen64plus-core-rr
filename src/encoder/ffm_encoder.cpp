@@ -1,47 +1,172 @@
 #include "ffm_encoder.hpp"
+#include <libavcodec/avcodec.h>
+#include <libavcodec/codec.h>
+#include <libavcodec/packet.h>
+#include <libavformat/avformat.h>
+#include <libavutil/frame.h>
 #include <array>
+#include <new>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include "api/m64p_types.h"
-#include "avcpp/codec.h"
-#include "avcpp/codeccontext.h"
-#include "avcpp/dictionary.h"
-#include "avcpp/format.h"
-#include "avcpp/pixelformat.h"
+#include "backends/api/encoder.h"
+#include "encoder/ffm_error.hpp"
 
 using namespace std::literals;
 
-static std::array<std::string_view, 2> fmt_mime_types {
-    "video/mp4"sv, "video/webm"sv};
+static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
 
 namespace m64p {
+    
     ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) {
-        av::OutputFormat ofmt = (fmt == M64FMT_NULL)
-            ? av::OutputFormat(""s, path)
-            : av::OutputFormat(""s, ""s, std::string(fmt_mime_types[fmt]));
+        int err;
+        const AVOutputFormat* ofmt;
 
-        enum AVCodecID vcodec_id = ofmt.defaultVideoCodecId();
-        enum AVCodecID acodec_id = ofmt.defaultAudioCodecId();
+        // guess output format
+        if (fmt == M64FMT_NULL)
+            ofmt = av_guess_format(NULL, path, NULL);
+        else
+            ofmt = av_guess_format(NULL, NULL, fmt_mime_types[fmt]);
 
-        if (vcodec_id == AV_CODEC_ID_NONE || acodec_id == AV_CODEC_ID_NONE) {
-            throw std::invalid_argument("Format does not support video AND audio!");
+        if (ofmt == nullptr)
+            throw std::runtime_error("No available output formats");
+
+        // alloc output context
+        if ((err = avformat_alloc_output_context2(&m_fmt_ctx, ofmt, NULL, path)
+            ) < 0) {
+            throw av::av_error(err);
+        }
+
+        // find codecs
+        m_vcodec = (ofmt->video_codec != AV_CODEC_ID_NONE)
+            ? avcodec_find_encoder(ofmt->video_codec)
+            : nullptr;
+        m_acodec = (ofmt->audio_codec != AV_CODEC_ID_NONE)
+            ? avcodec_find_encoder(ofmt->audio_codec)
+            : nullptr;
+
+        // alloc and init video stream
+        if (m_vcodec) {
+            m_vstream = avformat_new_stream(m_fmt_ctx, m_vcodec);
+            m_vcodec_ctx = avcodec_alloc_context3(m_vcodec);
+            m_vpacket = av_packet_alloc();
+            m_vframe = av_frame_alloc();
+            
+            if (!m_vstream || !m_vcodec_ctx || !m_vpacket || !m_vframe) {
+                throw std::bad_alloc();
+            }
+            video_init();
+        }
+        else {
+            m_vstream = nullptr;
+            m_vcodec_ctx = nullptr;
+            m_vpacket = nullptr;
+            m_vframe = nullptr;
         }
         
-        m_vcodec = av::findEncodingCodec(vcodec_id);
-        m_acodec = av::findEncodingCodec(acodec_id);
+        // alloc and init audio stream
+        if (m_acodec) {
+            m_astream = avformat_new_stream(m_fmt_ctx, m_acodec);
+            m_acodec_ctx = avcodec_alloc_context3(m_acodec);
+            m_apacket = av_packet_alloc();
+            m_aframe = av_frame_alloc();
+            
+            if (!m_astream || !m_acodec_ctx || !m_apacket || !m_aframe) {
+                throw std::bad_alloc();
+            }
+            audio_init();
+        }
+        else {
+            m_astream = nullptr;
+            m_acodec_ctx = nullptr;
+            m_apacket = nullptr;
+            m_aframe = nullptr;
+        }
+
+    }
+    
+    void ffm_encoder::video_init() {
         
-        m_fmt_ctx.setFormat(ofmt);
-        
-        m_vstream = m_fmt_ctx.addStream(m_vcodec);
-        m_astream = m_fmt_ctx.addStream(m_acodec);
-        
-        m_vcodec_ctx.setWidth(640);
-        m_vcodec_ctx.setHeight(480);
-        m_vcodec_ctx.setPixelFormat(m_vcodec.supportedPixelFormats()[0]);
-        m_vcodec_ctx.setTimeBase({1, 60});
-        m_vstream.setTimeBase({1, 60});
-        m_vstream.setFrameRate({1, 1});
-        
-        m_vstream.setAverageFrameRate({1, 1});
     }
 }  // namespace m64p
+
+struct encoder_backend_interface g_iffmpeg_encoder_backend {
+    // init
+    [](void** self_, const char* path, m64p_encoder_format fmt) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self = new m64p::ffm_encoder(path, fmt);
+            *self_ = self;
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc&) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error&) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // push_video
+    [](void* self_) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self = static_cast<m64p::ffm_encoder*>(self_);
+            self->push_video();
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc&) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error&) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // set_sample_rate
+    [](void* self_, unsigned int rate) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self = static_cast<m64p::ffm_encoder*>(self_);
+            self->set_sample_rate(rate);
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc&) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error&) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // push_audio
+    [](void* self_, void* samples, size_t len) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self = static_cast<m64p::ffm_encoder*>(self_);
+            self->push_audio(samples, len);
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc&) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error&) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // free
+    [](void* self_, bool discard) -> void {
+        try {
+            m64p::ffm_encoder* self = static_cast<m64p::ffm_encoder*>(self_);
+            delete self;
+        }
+        catch (const std::exception&) {
+        }
+    },
+};

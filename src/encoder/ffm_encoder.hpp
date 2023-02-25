@@ -1,18 +1,20 @@
 #ifndef M64P_ENCODER_FFM_ENCODER_HPP
 #define M64P_ENCODER_FFM_ENCODER_HPP
 
-#include "avcpp/codec.h"
-#include "avcpp/codeccontext.h"
-#include "avcpp/formatcontext.h"
-#include "backends/api/encoder.h"
 extern "C" {
     #include "api/m64p_types.h"
+    #include <libavcodec/avcodec.h>
+    #include <libavformat/avformat.h>
 }
 
 namespace m64p {
     class ffm_encoder {
     public:
         ffm_encoder(const char* path, m64p_encoder_format fmt);
+        
+        ~ffm_encoder() {
+            avformat_free_context(m_fmt_ctx);
+        }
         
         m64p_error push_video();
         
@@ -22,18 +24,22 @@ namespace m64p {
         
         bool should_discard;
     private:
-        av::FormatContext m_fmt_ctx;
+        AVFormatContext* m_fmt_ctx;
         
-        av::Stream m_vstream;
-        av::VideoEncoderContext m_vcodec_ctx;
-        av::Codec m_vcodec;
-        av::Packet m_vpacket;
+        AVStream* m_vstream;
+        AVCodecContext* m_vcodec_ctx;
+        const AVCodec* m_vcodec;
+        AVPacket* m_vpacket;
+        AVFrame* m_vframe;
         
-        av::Stream m_astream;
-        av::AudioEncoderContext m_acodec_ctx;
-        av::Codec m_acodec;
-        av::Packet m_apacket;
-        av::AudioSamples m_aframe;
+        AVStream* m_astream;
+        AVCodecContext* m_acodec_ctx;
+        const AVCodec* m_acodec;
+        AVPacket* m_apacket;
+        AVFrame* m_aframe;
+        
+        void video_init();
+        void audio_init();
     };
 }
 
