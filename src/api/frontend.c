@@ -49,6 +49,10 @@
 #include "plugin/plugin.h"
 #include "vidext.h"
 
+#ifdef ENC_SUPPORT
+#include "encoder.h"
+#endif
+
 /* some local state variables */
 static int l_CoreInit = 0;
 static int l_ROMOpen = 0;
@@ -104,6 +108,11 @@ EXPORT m64p_error CALL CoreStartup(int APIVersion, const char *ConfigPath, const
 
     /* The ROM database contains MD5 hashes, goodnames, and some game-specific parameters */
     romdatabase_open();
+    
+    /* Setup the encoder backend */
+    #ifdef ENC_SUPPORT
+    encoder_startup();
+    #endif
 
     workqueue_init();
 
@@ -129,6 +138,11 @@ EXPORT m64p_error CALL CoreShutdown(void)
     /* deallocate base memory */
     release_mem_base(g_mem_base);
     g_mem_base = NULL;
+    
+    /* Tear down the encoder backend */
+    #ifdef ENC_SUPPORT
+    encoder_shutdown();
+    #endif
 
     l_CoreInit = 0;
     return M64ERR_SUCCESS;
@@ -432,5 +446,3 @@ EXPORT m64p_error CALL CoreGetRomSettings(m64p_rom_settings *RomSettings, int Ro
 
     return M64ERR_SUCCESS;
 }
-
-

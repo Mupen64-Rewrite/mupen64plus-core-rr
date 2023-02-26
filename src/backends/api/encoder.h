@@ -52,7 +52,7 @@ struct encoder_backend_interface {
     /**
      * Frees the encoder backend. If discard is true, then it should not save the file.
      */
-    void (*free)(void* self, bool discard);
+    m64p_error (*free)(void* self, bool discard);
 };
 #ifdef __cplusplus
 }

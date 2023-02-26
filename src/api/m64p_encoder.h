@@ -31,8 +31,8 @@
 #endif
 
 #define M64P_API_FN(RT, name, ...) \
-  EXPORT RT name(__VA_ARGS__); \
-  typedef RT (*ptr_##name)(__VA_ARGS__)
+  typedef RT (*ptr_##name)(__VA_ARGS__); \
+  EXPORT RT CALL name(__VA_ARGS__)
 
 /**
  * Returns 1 if the encoder is active, 0 otherwise.

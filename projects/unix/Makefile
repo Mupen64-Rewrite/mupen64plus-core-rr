@@ -363,21 +363,6 @@ ifeq ($(ENC_SUPPORT), 1)
   endif
   CFLAGS += $(FFMPEG_CFLAGS)
   LDLIBS += $(FFMPEG_LDLIBS)
-  
-	# avcpp library
-  ifeq ($(origin AVCPP_CFLAGS) $(origin AVCPP_LDLIBS), undefined undefined)
-    ifeq ($(shell $(PKG_CONFIG) --modversion libavcpp 2>/dev/null),)
-      CFLAGS += -I$(SUBDIR)/avcpp/include
-      AVCPP_SOURCE = \
-        $(wildcard $(SUBDIR)/avcpp/src/*.cpp) \
-        $(wildcard $(SUBDIR)/avcpp/src/*.h)
-		else
-			AVCPP_CFLAGS += $(shell $(PKG_CONFIG) --cflags libavcpp)
-			AVCPP_LDLIBS += $(shell $(PKG_CONFIG) --libs libavcpp)
-    endif
-  endif
-  CFLAGS += $(AVCPP_CFLAGS)
-  LDLIBS += $(AVCPP_LDLIBS)
 endif
 
 # test for presence of SDL
@@ -670,10 +655,12 @@ endif
 # Encoder
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
-# SOURCE += \
-# 	$(SRCDIR)/backends/encoder/utils.c \
-# 	$(SRCDIR)/backends/encoder/backend.c \
-# 	$(SRCDIR)/backends/encoder/ffmpeg.c
+SOURCE += \
+	$(SRCDIR)/backends/encoder/ffm_encoder.cpp \
+	$(SRCDIR)/backends/encoder/ffm_encoder.hpp \
+	$(SRCDIR)/backends/encoder/ffm_helpers.hpp \
+	$(SRCDIR)/api/encoder.c \
+	$(SRCDIR)/api/encoder.h
 CFLAGS += -DENC_SUPPORT
 endif
 

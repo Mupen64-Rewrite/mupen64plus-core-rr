@@ -91,4 +91,7 @@ VCR_SetReadOnly;
 VCR_StartRecording;
 VCR_StartMovie;
 VCR_LoadErrorStates;
+Encoder_IsActive;
+Encoder_Start;
+Encoder_Stop;
 local: *; };

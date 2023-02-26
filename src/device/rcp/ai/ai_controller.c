@@ -30,6 +30,8 @@
 #include "device/rcp/ri/ri_controller.h"
 #include "device/rcp/vi/vi_controller.h"
 #include "device/rdram/rdram.h"
+#include "api/m64p_encoder.h"
+#include "api/encoder.h"
 
 
 #define AI_STATUS_BUSY UINT32_C(0x40000000)
@@ -82,7 +84,9 @@ static void do_dma(struct ai_controller* ai, struct ai_dma* dma)
         ai->iaout->set_frequency(ai->aout, frequency);
         
         #ifdef ENC_SUPPORT
-        // TODO:ENC set encoder frequency
+        if (Encoder_IsActive()) {
+            encoder_set_sample_rate(frequency);
+        }
         #endif
 
         ai->samples_format_changed = 0;
@@ -183,6 +187,9 @@ void read_ai_regs(void* opaque, uint32_t address, uint32_t* value)
             ai->iaout->push_samples(ai->aout, p + diff, ai->last_read - *value);
             #ifdef ENC_SUPPORT
             // TODO:ENC push audio samples to backend
+            if (Encoder_IsActive()) {
+                encoder_push_audio(p + diff, ai->last_read - *value);
+            }
             #endif
             ai->last_read = *value;
         }
@@ -237,6 +244,9 @@ void ai_end_of_dma_event(void* opaque)
         ai->iaout->push_samples(ai->aout, p + diff, ai->last_read);
         #ifdef ENC_SUPPORT
         // TODO:ENC push audio samples to backend
+        if (Encoder_IsActive()) {
+            encoder_push_audio(p + diff, ai->last_read);
+        }
         #endif
         ai->last_read = 0;
     }
