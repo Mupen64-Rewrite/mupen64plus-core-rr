@@ -45,7 +45,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <system_error>
 #include "api/m64p_types.h"
 #include "backends/api/encoder.h"
-#include "encoder/ffm_helpers.hpp"
+#include "ffm_helpers.hpp"
 #include "plugin/plugin.h"
 
 extern "C" {
