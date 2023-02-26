@@ -24,6 +24,11 @@
  */
 
 #include <stdint.h>
+
+
+#ifndef ENC_SUPPORT
+#define ENC_SUPPORT
+#endif
 #include "m64p_types.h"
 
 #ifndef BOOL
