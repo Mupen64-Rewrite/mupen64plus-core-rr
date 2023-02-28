@@ -39,11 +39,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ffm_encoder.hpp"
 #include <array>
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <string>
 #include <system_error>
-#include "api/m64p_types.h"
 #include "backends/api/encoder.h"
 #include "ffm_helpers.hpp"
 #include "plugin/plugin.h"
@@ -51,11 +51,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/audio_fifo.h>
 #include <libavutil/avutil.h>
 #include <libavutil/opt.h>
+#include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include "api/m64p_types.h"
+#include "api/callbacks.h"
 }
 
 using namespace std::literals;
@@ -63,16 +66,7 @@ using namespace std::literals;
 static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
 static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
 
-// signed power of 10
-static constexpr int64_t operator""_sp10(unsigned long long x) {
-    if (x > 18)
-        throw std::runtime_error("nope");
-
-    int64_t n = 1;
-    for (unsigned long long i = 0; i < x; i++)
-        n *= 10;
-    return n;
-}
+namespace {}
 
 namespace m64p {
 
@@ -110,7 +104,8 @@ namespace m64p {
             m_vframe1    = av_frame_alloc();
             m_vframe2    = av_frame_alloc();
 
-            if (!m_vstream || !m_vcodec_ctx || !m_vpacket || !m_vframe1) {
+            if (!m_vstream || !m_vcodec_ctx || !m_vpacket || !m_vframe1 ||
+                !m_vframe2) {
                 throw std::bad_alloc();
             }
             video_init();
@@ -122,19 +117,19 @@ namespace m64p {
             m_vframe1    = nullptr;
         }
         m_sws = nullptr;
+        m_vpts = 0;
 
         // alloc and init audio stream
         if (m_acodec) {
-            // TODO support this stuff...
-            if (!(m_acodec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
-                throw m64p::unsupported_error();
-
             m_astream    = avformat_new_stream(m_fmt_ctx, m_acodec);
             m_acodec_ctx = avcodec_alloc_context3(m_acodec);
             m_apacket    = av_packet_alloc();
-            m_aframe     = av_frame_alloc();
+            m_aframe1    = av_frame_alloc();
+            m_aframe2    = av_frame_alloc();
+            m_arate      = 44100;
 
-            if (!m_astream || !m_acodec_ctx || !m_apacket || !m_aframe) {
+            if (!m_astream || !m_acodec_ctx || !m_apacket || !m_aframe1 ||
+                !m_aframe2) {
                 throw std::bad_alloc();
             }
             audio_init();
@@ -143,9 +138,12 @@ namespace m64p {
             m_astream    = nullptr;
             m_acodec_ctx = nullptr;
             m_apacket    = nullptr;
-            m_aframe     = nullptr;
+            m_aframe1    = nullptr;
+            m_afifo      = nullptr;
+            m_arate      = 0;
         }
         m_swr = nullptr;
+        m_apts = 0;
 
         // set a global header if the format demands one
         if (m_fmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
@@ -161,6 +159,31 @@ namespace m64p {
         // write the header (formatting options go here)
         if ((err = avformat_write_header(m_fmt_ctx, NULL)) < 0)
             throw av::av_error(err);
+    }
+
+    ffm_encoder::~ffm_encoder() {
+        if (m_vcodec != nullptr) {
+            avcodec_free_context(&m_vcodec_ctx);
+            av_packet_free(&m_vpacket);
+            av_frame_free(&m_vframe1);
+            av_frame_free(&m_vframe2);
+            sws_freeContext(m_sws);
+            m_sws = nullptr;
+        }
+        if (m_acodec != nullptr) {
+            avcodec_free_context(&m_acodec_ctx);
+            av_packet_free(&m_apacket);
+            av_frame_free(&m_aframe1);
+            av_frame_free(&m_aframe2);
+            swr_free(&m_swr);
+            if (m_afifo) {
+                av_audio_fifo_free(m_afifo);
+                m_afifo = nullptr;
+            }
+        }
+
+        avformat_free_context(m_fmt_ctx);
+        m_fmt_ctx = nullptr;
     }
 
     void ffm_encoder::video_init() {
@@ -205,14 +228,29 @@ namespace m64p {
         // sample rate and bit rate are very sensible defaults
         m_acodec_ctx->ch_layout   = AV_CHANNEL_LAYOUT_STEREO;
         m_acodec_ctx->sample_rate = 48000;
-        m_acodec_ctx->sample_fmt  = m_acodec->sample_fmts[0];
-        m_acodec_ctx->bit_rate    = 196000;
+        if (m_acodec->sample_fmts) {
+            AVSampleFormat fmt = m_acodec->sample_fmts[0];
+            for (const auto* i = m_acodec->sample_fmts; *i != -1; i++) {
+                if (*i == AV_SAMPLE_FMT_S16) {
+                    fmt = *i;
+                    break;
+                }
+                if (*i == AV_SAMPLE_FMT_S16P)
+                    fmt = *i;
+            }
+            DebugMessage(M64MSG_INFO, "Found sample format: %s", av_get_sample_fmt_name(fmt));
+            m_acodec_ctx->sample_fmt = fmt;
+        }
+        else
+            m_acodec_ctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        m_acodec_ctx->bit_rate = 196000;
         // time_base = 1/sample_rate
         m_acodec_ctx->time_base = {1, m_acodec_ctx->sample_rate};
         m_astream->time_base    = m_acodec_ctx->time_base;
 
         // no idea why this is here, but I'm all for it
         m_acodec_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+
 
         // open the codec
         if ((err = avcodec_open2(m_acodec_ctx, m_acodec, NULL)) < 0)
@@ -222,9 +260,25 @@ namespace m64p {
                  m_astream->codecpar, m_acodec_ctx
              )) < 0)
             throw av::av_error(err);
+        
+        // init audio FIFO
+        if (!(m_acodec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
+            m_afifo = av_audio_fifo_alloc(
+                m_acodec_ctx->sample_fmt, m_acodec_ctx->ch_layout.nb_channels,
+                m_acodec_ctx->frame_size
+            );
+            if (!m_afifo)
+                throw std::bad_alloc();
+        }
+        else {
+            m_afifo = nullptr;
+        }
     }
 
     void ffm_encoder::push_video() {
+        if (!m_vcodec)
+            return;
+
         int err = 0;
         int fw = 0, fh = 0;
         // check what the frame size is
@@ -251,128 +305,153 @@ namespace m64p {
         // read the screen data
         gfx.readScreen(m_vframe1->data[0], nullptr, nullptr, false);
         // reformat to codec format
-        sws_scale(
+        err = sws_scale(
             m_sws, m_vframe1->data, m_vframe1->linesize, 0, fh, m_vframe2->data,
             m_vframe2->linesize
         );
-
-        // send the frame for encoding
-        if ((err = avcodec_send_frame(m_vcodec_ctx, m_vframe2)) < 0)
+        if (err < 0)
             throw av::av_error(err);
-
-        // loop until we can't get any more packets
-        while ((err = avcodec_receive_packet(m_vcodec_ctx, m_vpacket)) >= 0) {
-            // set stream_index and duration
-            m_vpacket->stream_index = m_vstream->index;
-            m_vpacket->duration     = 1;
-            // write the frame
-            if ((err = av_interleaved_write_frame(m_fmt_ctx, m_vpacket)) < 0)
-                throw av::av_error(err);
-        }
-        // AVERROR(EAGAIN): you need to send another frame
-        // AVERROR_EOF: encoder is done
-        // anything else: invalid reason, throw now
-        if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
-            throw av::av_error(err);
+        
+        // set the timestamp for this frame
+        m_vframe2->time_base = m_vcodec_ctx->time_base;
+        m_vframe2->pts = m_vpts++;
+        
+        av::encode_and_write(
+            m_vframe2, m_vpacket, m_vcodec_ctx, m_vstream, m_fmt_ctx
+        );
     }
 
     void ffm_encoder::set_sample_rate(unsigned int rate) {
+        if (!m_acodec)
+            return;
         m_arate = rate;
     }
 
-    void ffm_encoder::push_audio(void* samples, size_t len) {
+    void ffm_encoder::drain_fifo() {
         int err;
-        // number of input/output samples
-        int nb_isamples, nb_osamples;
-        // (re)allocate swresample context
-        err = swr_alloc_set_opts2(
+        while (av_audio_fifo_size(m_afifo) >= m_acodec_ctx->frame_size) {
+            // realloc the frame if needed
+            av::alloc_audio_frame(
+                m_aframe2, m_acodec_ctx->frame_size, m_acodec_ctx->ch_layout,
+                m_acodec_ctx->sample_fmt
+            );
+            // pull data from FIFO
+            err = av_audio_fifo_read(
+                m_afifo, reinterpret_cast<void**>(m_aframe2->data),
+                m_aframe2->nb_samples
+            );
+            if (err < 0)
+                throw av::av_error(err);
+            // set timestamp for frame
+            m_aframe2->time_base = m_acodec_ctx->time_base;
+            m_aframe2->pts = m_apts;
+            m_apts += m_aframe2->nb_samples;
+            // encode the data
+            av::encode_and_write(
+                m_aframe2, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
+            );
+        }
+    }
+
+    void ffm_encoder::push_audio(void* samples, size_t len) {
+        if (!m_acodec)
+            return;
+        int res;
+        int ilen, olen;
+        
+        res = swr_alloc_set_opts2(
             &m_swr,
-            // dst dimensions
+            // dst parameters
             &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
             m_acodec_ctx->sample_rate,
-            // src dimensions
+            // src parameters
             &chl_stereo, AV_SAMPLE_FMT_S16, m_arate,
-            // settings
+            // ignore this stuff
             0, nullptr
         );
-        if (err < 0) {
-            throw av::av_error(err);
-        }
-        // estimate number of samples
-        nb_isamples = len / 4;
-        nb_osamples = swr_get_out_samples(m_swr, nb_isamples);
+        if (res < 0)
+            throw av::av_error(res);
+        if ((res = swr_init(m_swr)) < 0)
+            throw av::av_error(res);
+        
+        ilen = len / 4;
+        olen = swr_get_out_samples(m_swr, ilen);
         // (re)allocate frame
         av::alloc_audio_frame(
-            m_aframe, nb_osamples, m_acodec_ctx->ch_layout,
-            m_acodec_ctx->sample_fmt
+            m_aframe1, olen, m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt
         );
-        // resample audio
-        swr_convert(
-            m_swr, m_aframe->data, nb_osamples,
-            &const_cast<const uint8_t*&>(reinterpret_cast<uint8_t*&>(samples)),
-            nb_isamples
-        );
-        
-        // send the frame for encoding
-        if ((err = avcodec_send_frame(m_acodec_ctx, m_aframe)) < 0)
-            throw av::av_error(err);
 
-        // loop until we can't get any more packets
-        while ((err = avcodec_receive_packet(m_acodec_ctx, m_apacket)) >= 0) {
-            // set stream_index and duration
-            m_apacket->stream_index = m_astream->index;
-            m_apacket->duration     = 1;
-            // write the frame
-            if ((err = av_interleaved_write_frame(m_fmt_ctx, m_apacket)) < 0)
-                throw av::av_error(err);
+        // resample input data
+        res = swr_convert(
+            m_swr, m_aframe1->data, olen,
+            &const_cast<const uint8_t*&>(reinterpret_cast<uint8_t*&>(samples)),
+            ilen
+        );
+        if (res < 0)
+            throw av::av_error(res);
+        // if successful, res = number of output samples
+        olen = res;
+
+        if (m_afifo) {
+            // dump data into FIFO
+            res = av_audio_fifo_write(
+                m_afifo, reinterpret_cast<void**>(m_aframe1->data),
+                m_aframe1->nb_samples
+            );
+            if (res < 0)
+                throw av::av_error(res);
+
+            // encode as many frames as possible from FIFO
+            drain_fifo();
         }
-        // AVERROR(EAGAIN): you need to send another frame
-        // AVERROR_EOF: encoder is done
-        // anything else: invalid reason, throw now
-        if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
-            throw av::av_error(err);
+        else {
+            // encode audio data directly
+            av::encode_and_write(m_aframe1, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx);
+        }
     }
-    
+
     void ffm_encoder::finish(bool discard) {
         int err;
-        // send flush frame for encoding video
-        if ((err = avcodec_send_frame(m_vcodec_ctx, nullptr)) < 0)
-            throw av::av_error(err);
-
-        // loop until we can't get any more packets
-        while ((err = avcodec_receive_packet(m_vcodec_ctx, m_vpacket)) >= 0) {
-            // set stream_index and duration
-            m_vpacket->stream_index = m_vstream->index;
-            m_vpacket->duration     = 1;
-            // write the frame
-            if ((err = av_interleaved_write_frame(m_fmt_ctx, m_vpacket)) < 0)
-                throw av::av_error(err);
+        int nb_samples;
+        if (m_vcodec) {
+            // flush video
+            // av::encode_and_write(
+            //     nullptr, m_vpacket, m_vcodec_ctx, m_vstream, m_fmt_ctx
+            // );
         }
-        // AVERROR(EAGAIN): you need to send another frame
-        // AVERROR_EOF: encoder is done
-        // anything else: invalid reason, throw now
-        if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
-            throw av::av_error(err);
-            
-        // send flush frame for encoding audio
-        if ((err = avcodec_send_frame(m_acodec_ctx, nullptr)) < 0)
-            throw av::av_error(err);
 
-        // loop until we can't get any more packets
-        while ((err = avcodec_receive_packet(m_acodec_ctx, m_apacket)) >= 0) {
-            // set stream_index and duration
-            m_apacket->stream_index = m_astream->index;
-            m_apacket->duration     = 1;
-            // write the frame
-            if ((err = av_interleaved_write_frame(m_fmt_ctx, m_apacket)) < 0)
-                throw av::av_error(err);
+        if (m_acodec) {
+            // drain last bytes from audio FIFO
+            if (m_afifo) {
+                nb_samples = av_audio_fifo_size(m_afifo);
+                // allocate enough space for the remaining bytes
+                av::alloc_audio_frame(
+                    m_aframe2, nb_samples, m_acodec_ctx->ch_layout,
+                    m_acodec_ctx->sample_fmt
+                );
+                // drain the FIFO
+                err = av_audio_fifo_read(
+                    m_afifo, reinterpret_cast<void**>(m_aframe1->data),
+                    nb_samples
+                );
+                if (err < 0)
+                    throw av::av_error(err);
+                // set timestamp for frame
+                m_aframe2->time_base = m_acodec_ctx->time_base;
+                m_aframe2->pts = m_apts;
+                m_apts += m_aframe2->nb_samples;
+                // encode the last frame
+                av::encode_and_write(
+                    m_aframe2, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
+                );
+            }
+
+            // flush audio
+            // av::encode_and_write(
+            //     nullptr, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
+            // );
         }
-        // AVERROR(EAGAIN): you need to send another frame
-        // AVERROR_EOF: encoder is done
-        // anything else: invalid reason, throw now
-        if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
-            throw av::av_error(err);
-        
+
         // write the file trailer
         if ((err = av_write_trailer(m_fmt_ctx)) < 0)
             throw av::av_error(err);
@@ -401,89 +480,89 @@ struct encoder_backend_interface g_iffmpeg_encoder_backend {
             return M64ERR_INTERNAL;
         }
     },
-        // push_video
-        [](void* self_) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->push_video();
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc&) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error&) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error&) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // set_sample_rate
-        [](void* self_, unsigned int rate) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->set_sample_rate(rate);
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc&) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error&) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error&) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // push_audio
-        [](void* self_, void* samples, size_t len) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->push_audio(samples, len);
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc&) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error&) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error&) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // free
-        [](void* self_, bool discard) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->finish(discard);
-                delete self;
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc&) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error&) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error&) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
+    // push_video
+    [](void* self_) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self =
+                static_cast<m64p::ffm_encoder*>(self_);
+            self->push_video();
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc& e) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error& e) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (const m64p::unsupported_error& e) {
+            return M64ERR_UNSUPPORTED;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // set_sample_rate
+    [](void* self_, unsigned int rate) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self =
+                static_cast<m64p::ffm_encoder*>(self_);
+            self->set_sample_rate(rate);
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc& e) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error& e) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (const m64p::unsupported_error& e) {
+            return M64ERR_UNSUPPORTED;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // push_audio
+    [](void* self_, void* samples, size_t len) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self =
+                static_cast<m64p::ffm_encoder*>(self_);
+            self->push_audio(samples, len);
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc& e) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error& e) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (const m64p::unsupported_error& e) {
+            return M64ERR_UNSUPPORTED;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
+    // free
+    [](void* self_, bool discard) -> m64p_error {
+        try {
+            m64p::ffm_encoder* self =
+                static_cast<m64p::ffm_encoder*>(self_);
+            self->finish(discard);
+            delete self;
+            return M64ERR_SUCCESS;
+        }
+        catch (const std::bad_alloc& e) {
+            return M64ERR_NO_MEMORY;
+        }
+        catch (const std::system_error& e) {
+            return M64ERR_SYSTEM_FAIL;
+        }
+        catch (const m64p::unsupported_error& e) {
+            return M64ERR_UNSUPPORTED;
+        }
+        catch (...) {
+            return M64ERR_INTERNAL;
+        }
+    },
 };

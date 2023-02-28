@@ -1,6 +1,8 @@
+#define M64P_CORE_PROTOTYPES
 #include "backends/api/encoder.h"
 #include "SDL_mutex.h"
 #include "api/callbacks.h"
+#include "api/m64p_common.h"
 #include "api/m64p_types.h"
 #include "m64p_encoder.h"
 #include "encoder.h"
@@ -52,7 +54,7 @@ void encoder_push_video() {
     
     res = ibackend->push_video(backend_obj);
     if (res != M64ERR_SUCCESS) {
-        DebugMessage(M64MSG_ERROR, "Backend audio push failed");
+        DebugMessage(M64MSG_ERROR, "encoder_push_video | %s", CoreErrorMessage(res));
     } 
     SDL_UnlockMutex(enc_mutex);
 }
@@ -62,7 +64,7 @@ void encoder_set_sample_rate(unsigned int rate) {
     
     res = ibackend->set_sample_rate(backend_obj, rate);
     if (res != M64ERR_SUCCESS) {
-        DebugMessage(M64MSG_ERROR, "Backend audio push failed");
+        DebugMessage(M64MSG_ERROR, "encoder_set_sample_rate | %s", CoreErrorMessage(res));
     } 
     SDL_UnlockMutex(enc_mutex);
 }
@@ -72,7 +74,7 @@ void encoder_push_audio(void *data, size_t len) {
     
     res = ibackend->push_audio(backend_obj, data, len);
     if (res != M64ERR_SUCCESS) {
-        DebugMessage(M64MSG_ERROR, "Backend audio push failed");
+        DebugMessage(M64MSG_ERROR, "encoder_push_audio | %s", CoreErrorMessage(res));
     } 
     SDL_UnlockMutex(enc_mutex);
 }

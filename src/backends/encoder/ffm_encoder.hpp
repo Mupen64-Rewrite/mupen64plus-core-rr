@@ -2,14 +2,15 @@
 #define M64P_ENCODER_FFM_ENCODER_HPP
 
 
-#include <libswresample/swresample.h>
 #include <exception>
 extern "C" {
     #include "api/m64p_types.h"
     #include <libavcodec/avcodec.h>
     #include <libavformat/avformat.h>
     #include <libavutil/avutil.h>
+    #include <libavutil/audio_fifo.h>
     #include <libswscale/swscale.h>
+    #include <libswresample/swresample.h>
 }
 
 namespace m64p {
@@ -22,9 +23,7 @@ namespace m64p {
     public:
         ffm_encoder(const char* path, m64p_encoder_format fmt);
         
-        ~ffm_encoder() {
-            avformat_free_context(m_fmt_ctx);
-        }
+        ~ffm_encoder();
         
         void push_video();
         
@@ -37,6 +36,7 @@ namespace m64p {
         AVFormatContext* m_fmt_ctx;
         
         AVStream* m_vstream;
+        int64_t m_vpts;
         AVCodecContext* m_vcodec_ctx;
         const AVCodec* m_vcodec;
         AVPacket* m_vpacket;
@@ -45,15 +45,19 @@ namespace m64p {
         SwsContext* m_sws;
         
         AVStream* m_astream;
+        int64_t m_apts;
         AVCodecContext* m_acodec_ctx;
         const AVCodec* m_acodec;
         AVPacket* m_apacket;
-        AVFrame* m_aframe;
+        AVFrame* m_aframe1;
+        AVFrame* m_aframe2;
         SwrContext* m_swr;
         unsigned int m_arate;
+        AVAudioFifo* m_afifo;
         
         void video_init();
         void audio_init();
+        void drain_fifo();
     };
 }
 
