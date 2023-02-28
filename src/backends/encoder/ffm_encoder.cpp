@@ -407,6 +407,8 @@ namespace m64p {
         else {
             // encode audio data directly
             av::encode_and_write(m_aframe1, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx);
+            m_aframe1->pts = m_apts;
+            m_apts += m_aframe1->nb_samples;
         }
     }
 
@@ -546,6 +548,8 @@ struct encoder_backend_interface g_iffmpeg_encoder_backend {
     // free
     [](void* self_, bool discard) -> m64p_error {
         try {
+            if (self_ == NULL)
+                return M64ERR_INPUT_ASSERT;
             m64p::ffm_encoder* self =
                 static_cast<m64p::ffm_encoder*>(self_);
             self->finish(discard);

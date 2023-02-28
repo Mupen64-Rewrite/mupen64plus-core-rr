@@ -41,8 +41,8 @@ void encoder_startup() {
 }
 void encoder_shutdown() {
     SDL_LockMutex(enc_mutex);
-    
-    ibackend->free(backend_obj, false);
+    if (backend_obj != NULL)
+        ibackend->free(backend_obj, false);
     backend_obj = NULL;
     SDL_UnlockMutex(enc_mutex);
     
