@@ -1,5 +1,5 @@
-#ifndef AVEC_BASE_HPP_INCLUDED
-#define AVEC_BASE_HPP_INCLUDED
+#ifndef FFM_HELPERS_HPP
+#define FFM_HELPERS_HPP
 #include <libavcodec/packet.h>
 #include <libavutil/buffer.h>
 #include <exception>
