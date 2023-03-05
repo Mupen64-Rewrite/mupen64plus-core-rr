@@ -270,6 +270,11 @@ namespace m64p {
         );
         if (err < 0)
             throw av::av_error(err);
+        
+        err = av_opt_set_int(m_swr, "dither_method", SWR_DITHER_TRIANGULAR, 0);
+        if (err < 0)
+            throw av::av_error(err);
+        
         if ((err = swr_init(m_swr)) < 0)
             throw av::av_error(err);
     }
@@ -295,9 +300,6 @@ namespace m64p {
 
         // read the screen data (fw/fh aren't useful anymore)
         gfx.readScreen(m_vframe1->data[0], &fw, &fh, false);
-        if (m_vpts == 40) {
-            av::save_frame(m_vframe1, "test_frame.ppm");
-        }
         // reformat to codec format
         err = sws_scale_frame(m_sws, m_vframe2, m_vframe1);
         if (err < 0)
@@ -347,7 +349,6 @@ namespace m64p {
 #ifndef M64P_BIG_ENDIAN
             std::swap(s1, s2);
 #endif
-            s1 /= 2, s2 /= 2;
             p2[i] = s1, p2[i + 1] = s2;
         }
         // push samples into resampler

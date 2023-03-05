@@ -130,7 +130,7 @@ namespace av {
     ) {
         if (strcmp(ofmt->mime_type, "video/x-matroska") == 0) {
             vcodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
-            acodec = avcodec_find_encoder(AV_CODEC_ID_VORBIS);
+            acodec = avcodec_find_encoder(AV_CODEC_ID_FLAC);
             return;
         }
         vcodec = (ofmt->video_codec != AV_CODEC_ID_NONE && vcodec)
