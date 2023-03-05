@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <memory>
 #include <new>
 #include <stdexcept>
@@ -136,7 +137,6 @@ namespace m64p {
             m_apacket    = nullptr;
             m_aframe1    = nullptr;
         }
-        m_swr  = nullptr;
         m_apts = 0;
 
         // set a global header if the format demands one
@@ -260,6 +260,7 @@ namespace m64p {
             m_aframe_size = m_acodec_ctx->frame_size;
 
         // Setup the swresample context with a default sample rate
+        m_swr = nullptr;
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
@@ -335,18 +336,23 @@ namespace m64p {
     void ffm_encoder::push_audio(void* samples, size_t len) {
         if (!m_acodec)
             return;
-        int err, ilen;
-        int16_t* samples_u16;
-        // preprocess samples to avoid distortion
+        int err;
+        size_t ilen;
+        // Initial allocations
         ilen        = len / 4;
-        samples_u16 = reinterpret_cast<int16_t*>(samples);
         av::alloc_audio_frame(m_aframe1, ilen, chl_stereo, AV_SAMPLE_FMT_S16);
-        std::transform(
-            samples_u16, samples_u16 + ilen * 2,
-            reinterpret_cast<int16_t*>(m_aframe1->data[0]),
-            [](int16_t x) { return (x - 16384) / 4; }
-        );
+        
 
+        for (size_t i = 0; i < ilen; i++) {
+            uint32_t tmp = ((uint32_t*) samples)[i];
+#ifndef M64P_BIG_ENDIAN
+            tmp = (tmp >> 16) | (tmp << 16);
+#endif
+            // SWAR: divide both words by 2
+            tmp = (tmp >> 2) & 0xFFFF7FFF;
+            tmp |= (tmp & 0x40004000) << 1;
+            ((uint32_t*) m_aframe1->data[0])[i] = tmp;
+        }
         // push samples into resampler
         swr_convert(
             m_swr, nullptr, 0,
