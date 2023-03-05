@@ -50,7 +50,7 @@
 #include "vidext.h"
 
 #ifdef ENC_SUPPORT
-#include "encoder.h"
+#include "main/encoder.h"
 #endif
 
 /* some local state variables */

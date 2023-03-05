@@ -31,7 +31,7 @@
 #include "device/rcp/vi/vi_controller.h"
 #include "device/rdram/rdram.h"
 #include "api/m64p_encoder.h"
-#include "api/encoder.h"
+#include "main/encoder.h"
 
 
 #define AI_STATUS_BUSY UINT32_C(0x40000000)

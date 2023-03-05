@@ -24,16 +24,13 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 
 #ifndef ENC_SUPPORT
 #define ENC_SUPPORT
 #endif
 #include "m64p_types.h"
-
-#ifndef BOOL
-  #define BOOL int
-#endif
 
 #define M64P_API_FN(RT, name, ...) \
   typedef RT (*ptr_##name)(__VA_ARGS__); \
@@ -42,7 +39,7 @@
 /**
  * Returns 1 if the encoder is active, 0 otherwise.
  */
-M64P_API_FN(BOOL, Encoder_IsActive);
+M64P_API_FN(bool, Encoder_IsActive);
 /**
  * Starts the encoder. Any encoder settings go through config. Names will be documented later.
  * If this function raises an error, no encode will be started.
@@ -51,6 +48,6 @@ M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format for
 /**
  * Stops the encoder. If discard is true, discards data.
  */
-M64P_API_FN(m64p_error, Encoder_Stop, BOOL discard);
+M64P_API_FN(m64p_error, Encoder_Stop, bool discard);
 
 #undef M64P_API_FN

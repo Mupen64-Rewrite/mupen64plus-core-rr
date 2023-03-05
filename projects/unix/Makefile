@@ -659,8 +659,8 @@ SOURCE += \
 	$(SRCDIR)/backends/encoder/ffm_encoder.cpp \
 	$(SRCDIR)/backends/encoder/ffm_encoder.hpp \
 	$(SRCDIR)/backends/encoder/ffm_helpers.hpp \
-	$(SRCDIR)/api/encoder.c \
-	$(SRCDIR)/api/encoder.h
+	$(SRCDIR)/main/encoder.c \
+	$(SRCDIR)/main/encoder.h
 CFLAGS += -DENC_SUPPORT
 endif
 

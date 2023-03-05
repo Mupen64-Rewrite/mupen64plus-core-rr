@@ -47,7 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <system_error>
-#include "backends/api/encoder.h"
 #include "ffm_helpers.hpp"
 #include "plugin/plugin.h"
 
@@ -341,17 +340,15 @@ namespace m64p {
         // Initial allocations
         ilen        = len / 4;
         av::alloc_audio_frame(m_aframe1, ilen, chl_stereo, AV_SAMPLE_FMT_S16);
+        int16_t* p1 = (int16_t*) samples, * p2 = (int16_t*) m_aframe1->data[0];
         
-
-        for (size_t i = 0; i < ilen; i++) {
-            uint32_t tmp = ((uint32_t*) samples)[i];
+        for (size_t i = 0; i < ilen * 2; i += 2) {
+            int16_t s1 = p1[i], s2 = p1[i + 1];
 #ifndef M64P_BIG_ENDIAN
-            tmp = (tmp >> 16) | (tmp << 16);
+            std::swap(s1, s2);
 #endif
-            // SWAR: divide both words by 2
-            tmp = (tmp >> 2) & 0xFFFF7FFF;
-            tmp |= (tmp & 0x40004000) << 1;
-            ((uint32_t*) m_aframe1->data[0])[i] = tmp;
+            s1 /= 2, s2 /= 2;
+            p2[i] = s1, p2[i + 1] = s2;
         }
         // push samples into resampler
         swr_convert(
@@ -415,113 +412,3 @@ namespace m64p {
     }
 
 }  // namespace m64p
-
-struct encoder_backend_interface g_iffmpeg_encoder_backend {
-    // init
-    [](void** self_, const char* path, m64p_encoder_format fmt) -> m64p_error {
-        try {
-            m64p::ffm_encoder* self = new m64p::ffm_encoder(path, fmt);
-            *self_                  = self;
-            return M64ERR_SUCCESS;
-        }
-        catch (const std::bad_alloc&) {
-            return M64ERR_NO_MEMORY;
-        }
-        catch (const std::system_error&) {
-            return M64ERR_SYSTEM_FAIL;
-        }
-        catch (const m64p::unsupported_error&) {
-            return M64ERR_UNSUPPORTED;
-        }
-        catch (...) {
-            return M64ERR_INTERNAL;
-        }
-    },
-        // push_video
-        [](void* self_) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->push_video();
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc& e) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error& e) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error& e) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // set_sample_rate
-        [](void* self_, unsigned int rate) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->set_sample_rate(rate);
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc& e) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error& e) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error& e) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // push_audio
-        [](void* self_, void* samples, size_t len) -> m64p_error {
-            try {
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->push_audio(samples, len);
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc& e) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error& e) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error& e) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-        // free
-        [](void* self_, bool discard) -> m64p_error {
-            try {
-                if (self_ == NULL)
-                    return M64ERR_INPUT_ASSERT;
-                m64p::ffm_encoder* self =
-                    static_cast<m64p::ffm_encoder*>(self_);
-                self->finish(discard);
-                delete self;
-                return M64ERR_SUCCESS;
-            }
-            catch (const std::bad_alloc& e) {
-                return M64ERR_NO_MEMORY;
-            }
-            catch (const std::system_error& e) {
-                return M64ERR_SYSTEM_FAIL;
-            }
-            catch (const m64p::unsupported_error& e) {
-                return M64ERR_UNSUPPORTED;
-            }
-            catch (...) {
-                return M64ERR_INTERNAL;
-            }
-        },
-};

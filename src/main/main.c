@@ -36,7 +36,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "api/encoder.h"
 
 #define M64P_CORE_PROTOTYPES 1
 #ifdef VCR_SUPPORT
@@ -72,6 +71,7 @@
 #include "device/gb/gb_cart.h"
 #include "device/pif/bootrom_hle.h"
 #include "eventloop.h"
+#include "encoder.h"
 #include "main.h"
 #include "osal/files.h"
 #include "osal/preproc.h"
