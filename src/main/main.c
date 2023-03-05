@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "api/encoder.h"
 
 #define M64P_CORE_PROTOTYPES 1
 #ifdef VCR_SUPPORT
@@ -853,6 +854,7 @@ void new_frame(void)
     
     #ifdef ENC_SUPPORT
     // TODO:ENC pass frame to encoder
+    encoder_push_video();
     #endif
     
     /* advance the current frame */

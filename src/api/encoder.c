@@ -36,10 +36,14 @@ EXPORT m64p_error CALL Encoder_Stop(int discard) {
 }
 
 void encoder_startup() {
+    if (backend_obj)
+        return;
     ibackend = &g_iffmpeg_encoder_backend;
     enc_mutex = SDL_CreateMutex();
 }
 void encoder_shutdown() {
+    if (!backend_obj)
+        return;
     SDL_LockMutex(enc_mutex);
     if (backend_obj != NULL)
         ibackend->free(backend_obj, false);
@@ -49,6 +53,9 @@ void encoder_shutdown() {
     SDL_DestroyMutex(enc_mutex);
 }
 void encoder_push_video() {
+    if (!backend_obj)
+        return;
+    
     m64p_error res;
     SDL_LockMutex(enc_mutex);
     
@@ -59,6 +66,9 @@ void encoder_push_video() {
     SDL_UnlockMutex(enc_mutex);
 }
 void encoder_set_sample_rate(unsigned int rate) {
+    if (!backend_obj)
+        return;
+    
     m64p_error res;
     SDL_LockMutex(enc_mutex);
     
@@ -69,6 +79,9 @@ void encoder_set_sample_rate(unsigned int rate) {
     SDL_UnlockMutex(enc_mutex);
 }
 void encoder_push_audio(void *data, size_t len) {
+    if (!backend_obj)
+        return;
+    
     m64p_error res;
     SDL_LockMutex(enc_mutex);
     

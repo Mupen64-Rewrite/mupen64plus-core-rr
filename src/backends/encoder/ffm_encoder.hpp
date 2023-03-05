@@ -52,12 +52,10 @@ namespace m64p {
         AVFrame* m_aframe1;
         AVFrame* m_aframe2;
         SwrContext* m_swr;
-        unsigned int m_arate;
-        AVAudioFifo* m_afifo;
+        int m_aframe_size;
         
         void video_init();
         void audio_init();
-        void drain_fifo();
     };
 }
 

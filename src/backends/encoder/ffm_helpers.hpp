@@ -1,7 +1,7 @@
 #ifndef FFM_HELPERS_HPP
 #define FFM_HELPERS_HPP
-#include <libavcodec/packet.h>
-#include <libavutil/buffer.h>
+#include <cstdio>
+#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <memory>
@@ -15,6 +15,7 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
+#include <libswscale/swscale.h>
 }
 
 namespace av {
@@ -46,7 +47,8 @@ namespace av {
 
     // Allocate or reallocate buffers in a video frame.
     inline void alloc_video_frame(
-        AVFrame* frame, int width, int height, AVPixelFormat pix_fmt
+        AVFrame* frame, int width, int height, AVPixelFormat pix_fmt,
+        bool align = false
     ) {
         int err;
         if (!av_frame_is_writable(frame) || frame->width != width ||
@@ -122,12 +124,44 @@ namespace av {
         if (err != AVERROR(EAGAIN) && err != AVERROR_EOF)
             throw av::av_error(err);
     }
+
+    inline void select_codecs(
+        const AVOutputFormat* ofmt, const AVCodec*& vcodec, const AVCodec*& acodec
+    ) {
+        if (strcmp(ofmt->mime_type, "video/x-matroska") == 0) {
+            vcodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
+            acodec = avcodec_find_encoder(AV_CODEC_ID_VORBIS);
+            return;
+        }
+        vcodec = (ofmt->video_codec != AV_CODEC_ID_NONE && vcodec)
+            ? avcodec_find_encoder(ofmt->video_codec)
+            : nullptr;
+        acodec = (ofmt->audio_codec != AV_CODEC_ID_NONE && acodec)
+            ? avcodec_find_encoder(ofmt->audio_codec)
+            : nullptr;
+    }
     
+    inline void sws_setup_frames(SwsContext*& sws, AVFrame* src, AVFrame* dst, int flags = SWS_AREA) {
+        sws = sws_getCachedContext(sws,
+            src->width, src->height, static_cast<AVPixelFormat>(src->format),
+            dst->width, dst->height, static_cast<AVPixelFormat>(dst->format),
+            flags, nullptr, nullptr, nullptr
+        );
+    }
+    
+    inline void save_frame(const AVFrame* frame, const char* path) {
+        if (!frame || frame->format != AV_PIX_FMT_RGB24)
+            throw std::invalid_argument("Invalid or null frame");
+        FILE* f = fopen(path, "wb");
+        fprintf(f, "P6 %d %d 255\n", frame->width, frame->height);
+        fwrite(frame->data[0], frame->linesize[0] * frame->height, 1, f);
+        fflush(f);
+        fclose(f);
+    }
+
     template <auto P>
     struct fn_delete {
-        void operator()(void* p) {
-            P(p);
-        }
+        void operator()(void* p) { P(p); }
     };
 }  // namespace av
 
