@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "ffm_encoder.hpp"
+#include <libavutil/mathematics.h>
 #include <stdio.h>
 #include <algorithm>
 #include <array>
@@ -55,6 +56,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/audio_fifo.h>
 #include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
 #include <libavutil/samplefmt.h>
 #include <libswresample/swresample.h>
@@ -209,6 +211,24 @@ namespace m64p {
                  m_vstream->codecpar, m_vcodec_ctx
              )) < 0)
             throw av::av_error(err);
+
+        // allocate and fill vframe2 with black
+        // this is for the synchronizer
+        av::alloc_video_frame(
+            m_vframe2, m_vcodec_ctx->width, m_vcodec_ctx->height,
+            m_vcodec_ctx->pix_fmt
+        );
+        {
+            ptrdiff_t linesizes[AV_NUM_DATA_POINTERS];
+            std::copy_n(m_vframe2->linesize, AV_NUM_DATA_POINTERS, linesizes);
+            err = av_image_fill_black(
+                m_vframe2->data, linesizes, m_vcodec_ctx->pix_fmt,
+                m_vcodec_ctx->color_range, m_vcodec_ctx->width,
+                m_vcodec_ctx->height
+            );
+            if (err < 0)
+                throw av::av_error(err);
+        }
     }
 
     void ffm_encoder::audio_init() {
@@ -285,6 +305,14 @@ namespace m64p {
 
         int err = 0;
         int fw = 0, fh = 0;
+
+        while (av_compare_ts(m_vpts, m_vcodec_ctx->time_base, m_apts, m_acodec_ctx->time_base) < 0) {
+            m_vframe2->pts = m_vpts++;
+            av::encode_and_write(
+                m_vframe2, m_vpacket, m_vcodec_ctx, m_vstream, m_fmt_ctx
+            );
+        }
+
         // check what the frame size is
         gfx.readScreen(nullptr, &fw, &fh, false);
         if (fw == 0 || fh == 0)
