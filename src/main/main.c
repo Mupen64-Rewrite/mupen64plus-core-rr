@@ -1487,7 +1487,6 @@ m64p_error main_run(void)
 #ifdef VCR_SUPPORT
     // screw this
 #endif
-	DebugMessage(M64MSG_INFO,"                      TEST");
     size_t i, k;
     size_t rdram_size;
     uint32_t count_per_op;

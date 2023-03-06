@@ -34,46 +34,39 @@
 /* local variables */
 static ptr_DebugCallback pDebugFunc = NULL;
 static ptr_StateCallback pStateFunc = NULL;
-static void *            DebugContext = NULL;
-static void *            StateContext = NULL;
+static void* DebugContext           = NULL;
+static void* StateContext           = NULL;
 
 /* global Functions for use by the Core */
-m64p_error SetDebugCallback(ptr_DebugCallback pFunc, void *Context)
-{
-    pDebugFunc = pFunc;
+m64p_error SetDebugCallback(ptr_DebugCallback pFunc, void* Context) {
+    pDebugFunc   = pFunc;
     DebugContext = Context;
     return M64ERR_SUCCESS;
 }
 
-m64p_error SetStateCallback(ptr_StateCallback pFunc, void *Context)
-{
-    pStateFunc = pFunc;
+m64p_error SetStateCallback(ptr_StateCallback pFunc, void* Context) {
+    pStateFunc   = pFunc;
     StateContext = Context;
     return M64ERR_SUCCESS;
 }
 
-void DebugMessage(int level, const char *message, ...)
-{
-  char msgbuf[512];
-  va_list args;
+void DebugMessage(int level, const char* message, ...) {
+    char msgbuf[512];
+    va_list args;
+    
+    if (pDebugFunc == NULL)
+        return;
 
-  if (pDebugFunc == NULL)
-      return;
+    va_start(args, message);
+    vsnprintf(msgbuf, 512, message, args);
+    (*pDebugFunc)(DebugContext, level, msgbuf);
 
-  va_start(args, message);
-  vsnprintf(msgbuf, 512, message, args);
-
-  (*pDebugFunc)(DebugContext, level, msgbuf);
-
-  va_end(args);
+    va_end(args);
 }
 
-void StateChanged(m64p_core_param param_type, int new_value)
-{
+void StateChanged(m64p_core_param param_type, int new_value) {
     if (pStateFunc == NULL)
         return;
 
     (*pStateFunc)(StateContext, param_type, new_value);
 }
-
-

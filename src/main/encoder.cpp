@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <system_error>
 #include <thread>
-#include "backends/encoder/ffm_encoder.hpp"
+#include "encoder/ffm_encoder.hpp"
 #define M64P_CORE_PROTOTYPES
 #include <SDL2/SDL_mutex.h>
 extern "C" {

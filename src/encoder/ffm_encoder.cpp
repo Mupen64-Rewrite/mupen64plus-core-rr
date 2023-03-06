@@ -260,7 +260,7 @@ namespace m64p {
 
         // Setup the swresample context with a default sample rate
         m_swr = nullptr;
-        err = swr_alloc_set_opts2(
+        err   = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
             &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
@@ -270,11 +270,11 @@ namespace m64p {
         );
         if (err < 0)
             throw av::av_error(err);
-        
+
         err = av_opt_set_int(m_swr, "dither_method", SWR_DITHER_TRIANGULAR, 0);
         if (err < 0)
             throw av::av_error(err);
-        
+
         if ((err = swr_init(m_swr)) < 0)
             throw av::av_error(err);
     }
@@ -291,17 +291,24 @@ namespace m64p {
             throw std::logic_error("invalid frame size!");
 
         // (re)allocate FFmpeg structs
-        av::alloc_video_frame(m_vframe1, fw, fh, AV_PIX_FMT_RGB24);
+        av::alloc_video_frame(m_vframe1, fw, fh, AV_PIX_FMT_RGB24, true);
         av::alloc_video_frame(
             m_vframe2, m_vcodec_ctx->width, m_vcodec_ctx->height,
             m_vcodec_ctx->pix_fmt
         );
         av::sws_setup_frames(m_sws, m_vframe1, m_vframe2);
-
         // read the screen data (fw/fh aren't useful anymore)
         gfx.readScreen(m_vframe1->data[0], &fw, &fh, false);
-        // reformat to codec format
-        err = sws_scale_frame(m_sws, m_vframe2, m_vframe1);
+        {
+            // setup image unflipping
+            uint8_t* flip_data[AV_NUM_DATA_POINTERS];
+            int flip_linesize[AV_NUM_DATA_POINTERS];
+            av::setup_vflip_pointers(m_vframe1, flip_data, flip_linesize);
+            err = sws_scale(
+                m_sws, flip_data, flip_linesize, 0, m_vframe1->height,
+                m_vframe2->data, m_vframe2->linesize
+            );
+        }
         if (err < 0)
             throw av::av_error(err);
 
@@ -340,21 +347,26 @@ namespace m64p {
         int err;
         size_t ilen;
         // Initial allocations
-        ilen        = len / 4;
+        ilen = len / 4;
         av::alloc_audio_frame(m_aframe1, ilen, chl_stereo, AV_SAMPLE_FMT_S16);
-        int16_t* p1 = (int16_t*) samples, * p2 = (int16_t*) m_aframe1->data[0];
-        
+        int16_t *p1 = (int16_t*) samples, *p2 = (int16_t*) m_aframe1->data[0];
+
         for (size_t i = 0; i < ilen * 2; i += 2) {
             int16_t s1 = p1[i], s2 = p1[i + 1];
 #ifndef M64P_BIG_ENDIAN
             std::swap(s1, s2);
 #endif
-            p2[i] = s1, p2[i + 1] = s2;
+            // Hard saturation to prevent any AAC issues
+            p2[i] = std::clamp(
+                s1, static_cast<int16_t>(-16384), static_cast<int16_t>(16384)
+            );
+            p2[i + 1] = std::clamp(
+                s2, static_cast<int16_t>(-16384), static_cast<int16_t>(16384)
+            );
         }
         // push samples into resampler
         swr_convert(
-            m_swr, nullptr, 0,
-            const_cast<const uint8_t**>(m_aframe1->data),
+            m_swr, nullptr, 0, const_cast<const uint8_t**>(m_aframe1->data),
             ilen
         );
         // extract complete frames from resampler
@@ -384,7 +396,7 @@ namespace m64p {
         if (m_vcodec) {
         }
 
-        if (m_acodec) {
+        if (m_acodec && m_acodec_ctx->codec_id != AV_CODEC_ID_AAC) {
             // drain last bytes from resampler
             nb_samples = swr_get_out_samples(m_swr, 0);
             av::alloc_audio_frame(

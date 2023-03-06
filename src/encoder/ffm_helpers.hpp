@@ -48,7 +48,7 @@ namespace av {
     // Allocate or reallocate buffers in a video frame.
     inline void alloc_video_frame(
         AVFrame* frame, int width, int height, AVPixelFormat pix_fmt,
-        bool align = false
+        bool pack = false
     ) {
         int err;
         if (!av_frame_is_writable(frame) || frame->width != width ||
@@ -64,8 +64,20 @@ namespace av {
             frame->format = pix_fmt;
 
             // reallocate
-            if ((err = av_frame_get_buffer(frame, 0)) < 0)
+            if ((err = av_frame_get_buffer(frame, (pack ? 1 : 0))) < 0)
                 throw av_error(err);
+        }
+    }
+    
+    // For a frame containing video, sets up a pair of arrays
+    // that record the same data, vertically flipped.
+    inline void setup_vflip_pointers(
+        AVFrame* frame, uint8_t* data[AV_NUM_DATA_POINTERS],
+        int linesize[AV_NUM_DATA_POINTERS]
+    ) {
+        for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+            data[i] = frame->data[i] + frame->linesize[i] * (frame->height - 1);
+            linesize[i] = -frame->linesize[i];
         }
     }
 
@@ -126,7 +138,8 @@ namespace av {
     }
 
     inline void select_codecs(
-        const AVOutputFormat* ofmt, const AVCodec*& vcodec, const AVCodec*& acodec
+        const AVOutputFormat* ofmt, const AVCodec*& vcodec,
+        const AVCodec*& acodec
     ) {
         if (strcmp(ofmt->mime_type, "video/x-matroska") == 0) {
             vcodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
@@ -140,15 +153,18 @@ namespace av {
             ? avcodec_find_encoder(ofmt->audio_codec)
             : nullptr;
     }
-    
-    inline void sws_setup_frames(SwsContext*& sws, AVFrame* src, AVFrame* dst, int flags = SWS_AREA) {
-        sws = sws_getCachedContext(sws,
-            src->width, src->height, static_cast<AVPixelFormat>(src->format),
-            dst->width, dst->height, static_cast<AVPixelFormat>(dst->format),
-            flags, nullptr, nullptr, nullptr
+
+    inline void sws_setup_frames(
+        SwsContext*& sws, AVFrame* src, AVFrame* dst, int flags = SWS_AREA
+    ) {
+        sws = sws_getCachedContext(
+            sws, src->width, src->height,
+            static_cast<AVPixelFormat>(src->format), dst->width, dst->height,
+            static_cast<AVPixelFormat>(dst->format), flags, nullptr, nullptr,
+            nullptr
         );
     }
-    
+
     inline void save_frame(const AVFrame* frame, const char* path) {
         if (!frame || frame->format != AV_PIX_FMT_RGB24)
             throw std::invalid_argument("Invalid or null frame");

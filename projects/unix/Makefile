@@ -656,9 +656,9 @@ endif
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
 SOURCE += \
-	$(SRCDIR)/backends/encoder/ffm_encoder.cpp \
-	$(SRCDIR)/backends/encoder/ffm_encoder.hpp \
-	$(SRCDIR)/backends/encoder/ffm_helpers.hpp \
+	$(SRCDIR)/encoder/ffm_encoder.cpp \
+	$(SRCDIR)/encoder/ffm_encoder.hpp \
+	$(SRCDIR)/encoder/ffm_helpers.hpp \
 	$(SRCDIR)/main/encoder.c \
 	$(SRCDIR)/main/encoder.h
 CFLAGS += -DENC_SUPPORT
