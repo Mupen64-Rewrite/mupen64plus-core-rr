@@ -74,7 +74,9 @@ static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
 namespace {
     template <class F>
     struct finally {
-        finally(F&& f) : f(f) {}
+        finally(F&& f) : f(f) {
+            static_assert(noexcept(f()));
+        }
         ~finally() {
             f();
         }
@@ -332,9 +334,10 @@ namespace m64p {
         if (!m_vcodec)
             return;
         
-        finally _scope([&] {
+        finally _scope([&]() noexcept {
             std::unique_lock _lock(m_vmutex);
             m_vflag = false;
+            m_vcond.notify_one();
         });
 
         int err = 0;
