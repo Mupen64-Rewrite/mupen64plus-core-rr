@@ -71,11 +71,21 @@ using namespace std::literals;
 static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
 static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
 
-namespace {}
+namespace {
+    template <class F>
+    struct finally {
+        finally(F&& f) : f(f) {}
+        ~finally() {
+            f();
+        }
+        F f;
+    };
+}  // namespace
 
 namespace m64p {
 
-    ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) {
+    ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) :
+        m_vflag(false) {
         int err;
         const AVOutputFormat* ofmt;
 
@@ -300,12 +310,34 @@ namespace m64p {
             throw av::av_error(err);
     }
 
+    void ffm_encoder::read_screen() {
+        int fw = 0, fh = 0;
+        {
+            std::unique_lock _lock(m_vmutex);
+            while (m_vflag)
+                m_vcond.wait(_lock);
+            m_vflag = true;
+        }
+
+        // check what the frame size is
+        gfx.readScreen(nullptr, &fw, &fh, false);
+        if (fw == 0 || fh == 0)
+            throw std::logic_error("invalid frame size!");
+        av::alloc_video_frame(m_vframe1, fw, fh, AV_PIX_FMT_RGB24, true);
+        // read the screen data (fw/fh aren't useful anymore)
+        gfx.readScreen(m_vframe1->data[0], &fw, &fh, false);
+    }
+
     void ffm_encoder::push_video() {
         if (!m_vcodec)
             return;
+        
+        finally _scope([&] {
+            std::unique_lock _lock(m_vmutex);
+            m_vflag = false;
+        });
 
         int err = 0;
-        int fw = 0, fh = 0;
 
         while (av_compare_ts(
                    m_vpts, m_vcodec_ctx->time_base, m_apts,
@@ -317,20 +349,12 @@ namespace m64p {
             );
         }
 
-        // check what the frame size is
-        gfx.readScreen(nullptr, &fw, &fh, false);
-        if (fw == 0 || fh == 0)
-            throw std::logic_error("invalid frame size!");
-
         // (re)allocate FFmpeg structs
-        av::alloc_video_frame(m_vframe1, fw, fh, AV_PIX_FMT_RGB24, true);
         av::alloc_video_frame(
             m_vframe2, m_vcodec_ctx->width, m_vcodec_ctx->height,
             m_vcodec_ctx->pix_fmt
         );
         av::sws_setup_frames(m_sws, m_vframe1, m_vframe2);
-        // read the screen data (fw/fh aren't useful anymore)
-        gfx.readScreen(m_vframe1->data[0], &fw, &fh, false);
         {
             // setup image unflipping
             uint8_t* flip_data[AV_NUM_DATA_POINTERS];
@@ -354,28 +378,27 @@ namespace m64p {
     }
 
     void ffm_encoder::set_sample_rate(unsigned int rate) {
+        std::lock_guard _lock(m_amutex);
         int err;
-        {
-            std::lock_guard _lock(m_swr_mutex);
-            // change settings and reinitialize
-            if (m_swr && swr_is_initialized(m_swr))
-                swr_close(m_swr);
-            err = swr_alloc_set_opts2(
-                &m_swr,
-                // dst settings
-                &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
-                m_acodec_ctx->sample_rate,
-                // src settings
-                &chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
-            );
-            if (err < 0)
-                throw av::av_error(err);
-            if ((err = swr_init(m_swr)) < 0)
-                throw av::av_error(err);
-        }
+        // change settings and reinitialize
+        if (m_swr && swr_is_initialized(m_swr))
+            swr_close(m_swr);
+        err = swr_alloc_set_opts2(
+            &m_swr,
+            // dst settings
+            &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
+            m_acodec_ctx->sample_rate,
+            // src settings
+            &chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
+        );
+        if (err < 0)
+            throw av::av_error(err);
+        if ((err = swr_init(m_swr)) < 0)
+            throw av::av_error(err);
     }
 
     void ffm_encoder::push_audio(const void* samples, size_t len) {
+        std::lock_guard _lock(m_amutex);
         if (!m_acodec)
             return;
         int err;
@@ -399,15 +422,12 @@ namespace m64p {
             );
         }
         // push samples into resampler
-        {
-            std::lock_guard _lock(m_swr_mutex);
-            err = swr_convert(
-                m_swr, nullptr, 0, const_cast<const uint8_t**>(m_aframe1->data),
-                ilen
-            );
-            if (err < 0)
-                throw av::av_error(err);
-        }
+        err = swr_convert(
+            m_swr, nullptr, 0, const_cast<const uint8_t**>(m_aframe1->data),
+            ilen
+        );
+        if (err < 0)
+            throw av::av_error(err);
         // extract complete frames from resampler
         while (swr_get_out_samples(m_swr, 0) >= m_aframe_size) {
             av::alloc_audio_frame(
@@ -447,7 +467,7 @@ namespace m64p {
                 m_acodec_ctx->sample_fmt
             );
             {
-                std::lock_guard _lock(m_swr_mutex);
+                std::lock_guard _lock(m_amutex);
                 err =
                     swr_convert(m_swr, m_aframe2->data, nb_samples, nullptr, 0);
                 if (err < 0)
@@ -456,7 +476,7 @@ namespace m64p {
 
             m_aframe2->pts = m_apts;
             m_apts += m_aframe2->nb_samples;
-            
+
             av::encode_and_write(
                 m_aframe2, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
             );

@@ -1,5 +1,6 @@
 #ifndef FFM_HELPERS_HPP
 #define FFM_HELPERS_HPP
+#include <libavcodec/codec.h>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -158,6 +159,22 @@ namespace av {
         acodec = (ofmt->audio_codec != AV_CODEC_ID_NONE && acodec)
             ? avcodec_find_encoder(ofmt->audio_codec)
             : nullptr;
+    }
+    
+    // should be used later for HW accelerators
+    inline const AVCodec* find_good_encoder(AVCodecID id) {
+        void* it = nullptr;
+        const AVCodec* codec, * best_codec = nullptr;
+        
+        while ((codec = av_codec_iterate(&it))) {
+            if (codec->id != id)
+                continue;
+            
+            if (best_codec == nullptr)
+                best_codec = codec;
+        }
+        
+        return best_codec;
     }
 
     inline void sws_setup_frames(
