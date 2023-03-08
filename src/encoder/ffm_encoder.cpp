@@ -74,12 +74,8 @@ static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
 namespace {
     template <class F>
     struct finally {
-        finally(F&& f) : f(f) {
-            static_assert(noexcept(f()));
-        }
-        ~finally() {
-            f();
-        }
+        finally(F&& f) : f(f) { static_assert(noexcept(f())); }
+        ~finally() { f(); }
         F f;
     };
 }  // namespace
@@ -333,7 +329,7 @@ namespace m64p {
     void ffm_encoder::push_video() {
         if (!m_vcodec)
             return;
-        
+
         finally _scope([&]() noexcept {
             std::unique_lock _lock(m_vmutex);
             m_vflag = false;
@@ -416,6 +412,7 @@ namespace m64p {
 #ifndef M64P_BIG_ENDIAN
             std::swap(s1, s2);
 #endif
+#if 0
             // Hard saturation to prevent any AAC issues
             p2[i] = std::clamp(
                 s1, static_cast<int16_t>(-16384), static_cast<int16_t>(16384)
@@ -423,6 +420,9 @@ namespace m64p {
             p2[i + 1] = std::clamp(
                 s2, static_cast<int16_t>(-16384), static_cast<int16_t>(16384)
             );
+#else
+            p2[i] = s1, p2[i + 1] = s2;
+#endif
         }
         // push samples into resampler
         err = swr_convert(
@@ -483,10 +483,13 @@ namespace m64p {
             av::encode_and_write(
                 m_aframe2, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
             );
-            // flush packets
-            av::encode_and_write(
-                nullptr, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
-            );
+            // flush packets.
+            // AAC is not supported here due to issues with the encoder.
+            if (m_acodec->id != AV_CODEC_ID_AAC) {
+                av::encode_and_write(
+                    nullptr, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
+                );
+            }
         }
 
         // write the file trailer
