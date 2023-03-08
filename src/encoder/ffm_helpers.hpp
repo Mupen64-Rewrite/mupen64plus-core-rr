@@ -142,9 +142,15 @@ namespace av {
         const AVCodec*& acodec
     ) {
         if (strcmp(ofmt->mime_type, "video/x-matroska") == 0) {
-            vcodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
+            vcodec = avcodec_find_encoder(AV_CODEC_ID_H264);
             acodec = avcodec_find_encoder(AV_CODEC_ID_FLAC);
             return;
+        }
+        if (strcmp(ofmt->mime_type, "video/webm") == 0) {
+            vcodec = avcodec_find_encoder(AV_CODEC_ID_VP9);
+            acodec = avcodec_find_encoder(AV_CODEC_ID_OPUS);
+            return;
+            
         }
         vcodec = (ofmt->video_codec != AV_CODEC_ID_NONE && vcodec)
             ? avcodec_find_encoder(ofmt->video_codec)

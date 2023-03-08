@@ -182,7 +182,7 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 		//curSample is 0 indexed, so we must >= with size
 		if (curSample >= gMovieBuffer->size())
 		{
-			VCR_StopMovie(true);
+			VCR_StopMovie(false);
 			return true;
 		}
 		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame

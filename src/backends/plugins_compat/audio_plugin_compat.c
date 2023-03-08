@@ -26,11 +26,18 @@
 #include "device/rcp/ri/ri_controller.h"
 #include "device/rcp/vi/vi_controller.h"
 #include "device/rdram/rdram.h"
+#include "main/encoder.h"
+#include "api/m64p_encoder.h"
 #include "main/rom.h"
 #include "plugin/plugin.h"
 
 static void audio_plugin_set_frequency(void* aout, unsigned int frequency)
 {
+    #ifdef ENC_SUPPORT
+    if (Encoder_IsActive())
+        encoder_set_sample_rate(frequency);
+    #endif
+    
     struct ai_controller* ai = (struct ai_controller*)aout;
     uint32_t saved_ai_dacrate = ai->regs[AI_DACRATE_REG];
 
@@ -43,6 +50,11 @@ static void audio_plugin_set_frequency(void* aout, unsigned int frequency)
 
 static void audio_plugin_push_samples(void* aout, const void* buffer, size_t size)
 {
+    
+    #ifdef ENC_SUPPORT
+    if (Encoder_IsActive())
+        encoder_push_audio(buffer, size);
+    #endif
     /* abuse core & audio plugin implementation to approximate desired effect */
     struct ai_controller* ai = (struct ai_controller*)aout;
     uint32_t saved_ai_length = ai->regs[AI_LEN_REG];

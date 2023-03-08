@@ -3,6 +3,7 @@
 
 
 #include <exception>
+#include <shared_mutex>
 extern "C" {
     #include "api/m64p_types.h"
     #include <libavcodec/avcodec.h>
@@ -29,7 +30,7 @@ namespace m64p {
         
         void set_sample_rate(unsigned int rate);
         
-        void push_audio(void* samples, size_t len);
+        void push_audio(const void* samples, size_t len);
         
         void finish(bool discard);
     private:
@@ -53,6 +54,7 @@ namespace m64p {
         AVFrame* m_aframe2;
         SwrContext* m_swr;
         int m_aframe_size;
+        std::shared_mutex m_swr_mutex;
         
         void video_init();
         void audio_init();

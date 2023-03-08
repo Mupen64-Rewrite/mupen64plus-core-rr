@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <array>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <new>
 #include <stdexcept>
 #include <string>
@@ -306,7 +307,10 @@ namespace m64p {
         int err = 0;
         int fw = 0, fh = 0;
 
-        while (av_compare_ts(m_vpts, m_vcodec_ctx->time_base, m_apts, m_acodec_ctx->time_base) < 0) {
+        while (av_compare_ts(
+                   m_vpts, m_vcodec_ctx->time_base, m_apts,
+                   m_acodec_ctx->time_base
+               ) < 0) {
             m_vframe2->pts = m_vpts++;
             av::encode_and_write(
                 m_vframe2, m_vpacket, m_vcodec_ctx, m_vstream, m_fmt_ctx
@@ -351,25 +355,27 @@ namespace m64p {
 
     void ffm_encoder::set_sample_rate(unsigned int rate) {
         int err;
-
-        // change settings and reinitialize
-        if (m_swr && swr_is_initialized(m_swr))
-            swr_close(m_swr);
-        err = swr_alloc_set_opts2(
-            &m_swr,
-            // dst settings
-            &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
-            m_acodec_ctx->sample_rate,
-            // src settings
-            &chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
-        );
-        if (err < 0)
-            throw av::av_error(err);
-        if ((err = swr_init(m_swr)) < 0)
-            throw av::av_error(err);
+        {
+            std::lock_guard _lock(m_swr_mutex);
+            // change settings and reinitialize
+            if (m_swr && swr_is_initialized(m_swr))
+                swr_close(m_swr);
+            err = swr_alloc_set_opts2(
+                &m_swr,
+                // dst settings
+                &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
+                m_acodec_ctx->sample_rate,
+                // src settings
+                &chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
+            );
+            if (err < 0)
+                throw av::av_error(err);
+            if ((err = swr_init(m_swr)) < 0)
+                throw av::av_error(err);
+        }
     }
 
-    void ffm_encoder::push_audio(void* samples, size_t len) {
+    void ffm_encoder::push_audio(const void* samples, size_t len) {
         if (!m_acodec)
             return;
         int err;
@@ -393,10 +399,15 @@ namespace m64p {
             );
         }
         // push samples into resampler
-        swr_convert(
-            m_swr, nullptr, 0, const_cast<const uint8_t**>(m_aframe1->data),
-            ilen
-        );
+        {
+            std::lock_guard _lock(m_swr_mutex);
+            err = swr_convert(
+                m_swr, nullptr, 0, const_cast<const uint8_t**>(m_aframe1->data),
+                ilen
+            );
+            if (err < 0)
+                throw av::av_error(err);
+        }
         // extract complete frames from resampler
         while (swr_get_out_samples(m_swr, 0) >= m_aframe_size) {
             av::alloc_audio_frame(
@@ -422,22 +433,30 @@ namespace m64p {
         int err;
         int nb_samples;
         if (m_vcodec) {
+            // flush packets
+            av::encode_and_write(
+                nullptr, m_vpacket, m_vcodec_ctx, m_vstream, m_fmt_ctx
+            );
         }
 
-        if (m_acodec && m_acodec_ctx->codec_id != AV_CODEC_ID_AAC) {
+        if (m_acodec) {
             // drain last bytes from resampler
             nb_samples = swr_get_out_samples(m_swr, 0);
             av::alloc_audio_frame(
                 m_aframe2, nb_samples, m_acodec_ctx->ch_layout,
                 m_acodec_ctx->sample_fmt
             );
-            err = swr_convert(m_swr, m_aframe2->data, nb_samples, nullptr, 0);
-            if (err < 0)
-                throw av::av_error(err);
+            {
+                std::lock_guard _lock(m_swr_mutex);
+                err =
+                    swr_convert(m_swr, m_aframe2->data, nb_samples, nullptr, 0);
+                if (err < 0)
+                    throw av::av_error(err);
+            }
 
             m_aframe2->pts = m_apts;
             m_apts += m_aframe2->nb_samples;
-
+            
             av::encode_and_write(
                 m_aframe2, m_apacket, m_acodec_ctx, m_astream, m_fmt_ctx
             );
