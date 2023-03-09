@@ -88,7 +88,7 @@ namespace m64p {
         const AVOutputFormat* ofmt;
 
         // guess output format
-        if (fmt == M64FMT_NULL)
+        if (fmt == M64FMT_INFER)
             ofmt = av_guess_format(NULL, path, NULL);
         else
             ofmt = av_guess_format(NULL, NULL, fmt_mime_types[fmt]);

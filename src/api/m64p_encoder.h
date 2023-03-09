@@ -41,6 +41,10 @@
  */
 M64P_API_FN(bool, Encoder_IsActive);
 /**
+ * Sets a hint to the encoder.
+ */
+M64P_API_FN(m64p_error, Encoder_SetHint, m64p_encoder_hint_type type, const char* key, const char* value);
+/**
  * Starts the encoder. Any encoder settings go through config. Names will be documented later.
  * If this function raises an error, no encode will be started.
  */
