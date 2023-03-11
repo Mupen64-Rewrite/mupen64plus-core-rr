@@ -22,6 +22,8 @@
 /* This header file defines typedefs for function pointers to encoder
  * functions.
  */
+#ifndef M64P_ENCODER_H
+#define M64P_ENCODER_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -36,16 +38,34 @@
   typedef RT (*ptr_##name)(__VA_ARGS__); \
   EXPORT RT CALL name(__VA_ARGS__)
 
+typedef enum {
+  // Assumes based on file extension.
+  M64FMT_INFER = -1,
+  // .mp4
+  M64FMT_MP4 = 0,
+  // .webm
+  M64FMT_WEBM,
+  // .mov
+  M64FMT_MOV,
+  
+} m64p_encoder_format;
+
+typedef enum {
+  M64ENC_FORMAT = 0,
+  M64ENC_VIDEO,
+  M64ENC_AUDIO,
+} m64p_encoder_hint_type;
+
 /**
  * Returns 1 if the encoder is active, 0 otherwise.
  */
 M64P_API_FN(bool, Encoder_IsActive);
 /**
- * Sets a hint to the encoder.
- */
-M64P_API_FN(m64p_error, Encoder_SetHint, m64p_encoder_hint_type type, const char* key, const char* value);
-/**
- * Starts the encoder. Any encoder settings go through config. Names will be documented later.
+ * Starts the encoder. To apply settings, set and save settings in the following sections:
+ * - EncFFmpeg-Video
+ * - EncFFmpeg-Audio
+ * - EncFFmpeg-Format
+ * These sections correspond to the video codec, audio codec, and muxer respectively.
  * If this function raises an error, no encode will be started.
  */
 M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format format);
@@ -55,3 +75,5 @@ M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format for
 M64P_API_FN(m64p_error, Encoder_Stop, bool discard);
 
 #undef M64P_API_FN
+
+#endif

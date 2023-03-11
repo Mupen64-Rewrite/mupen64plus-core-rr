@@ -3,10 +3,12 @@
 #include <sched.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <any>
 #include <future>
 #include <shared_mutex>
 #include <system_error>
 #include <thread>
+#include <unordered_map>
 #include "encoder/ffm_encoder.hpp"
 #define M64P_CORE_PROTOTYPES
 #include <mutex>
@@ -22,6 +24,8 @@ static m64p::ffm_encoder* ffm_encoder;
 // - the read lock is the shared lock
 // - the write lock is the exclusive lock
 static std::shared_mutex enc_rwlock;
+
+static std::unordered_map<std::string, std::string> format_opts;
 
 extern struct encoder_backend_interface g_iffmpeg_encoder_backend;
 

@@ -22,7 +22,6 @@
  
 #ifndef M64P_ENCODER_FFM_HELPERS_HPP
 #define M64P_ENCODER_FFM_HELPERS_HPP
-#include <libavcodec/codec.h>
 #include <cstdio>
 #include <cstring>
 #include <exception>
@@ -32,6 +31,9 @@
 #include <string>
 #include <system_error>
 #include <type_traits>
+#include <unordered_map>
+#include "api/m64p_config.h"
+#include "api/m64p_types.h"
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -224,6 +226,8 @@ namespace av {
     struct fn_delete {
         void operator()(void* p) { P(p); }
     };
+    
+    AVDictionary* config_to_dict(m64p_handle handle);
 }  // namespace av
 
 #endif

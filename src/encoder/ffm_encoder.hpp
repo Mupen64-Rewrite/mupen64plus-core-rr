@@ -22,44 +22,58 @@
 #ifndef M64P_ENCODER_FFM_ENCODER_HPP
 #define M64P_ENCODER_FFM_ENCODER_HPP
 
-
 #include <atomic>
 #include <condition_variable>
 #include <exception>
 #include <mutex>
+#include <unordered_map>
 extern "C" {
-    #include "api/m64p_types.h"
-    #include <libavcodec/avcodec.h>
-    #include <libavformat/avformat.h>
-    #include <libavutil/avutil.h>
-    #include <libavutil/audio_fifo.h>
-    #include <libswscale/swscale.h>
-    #include <libswresample/swresample.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/audio_fifo.h>
+#include <libavutil/avutil.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+#include "api/m64p_encoder.h"
+#include "api/m64p_types.h"
 }
 
 namespace m64p {
+    using config_dict = std::unordered_map<std::string, std::string>;
+
     class unsupported_error : std::exception {
     public:
         using std::exception::exception;
     };
-    
+
     class ffm_encoder {
     public:
+        struct config {
+            std::unordered_map<std::string, std::string> format_opts;
+            std::unordered_map<std::string, std::string> video_opts;
+            std::unordered_map<std::string, std::string> audio_opts;
+        };
+
         ffm_encoder(const char* path, m64p_encoder_format fmt);
-        
+
         ~ffm_encoder();
-        
+
         void read_screen();
         void push_video();
-        
+
         void set_sample_rate(unsigned int rate);
-        
+
         void push_audio(const void* samples, size_t len);
-        
+
         void finish(bool discard);
+
     private:
+        ffm_encoder(
+            const char* path, m64p_encoder_format fmt, const config* cfg
+        );
+
         AVFormatContext* m_fmt_ctx;
-        
+
         AVStream* m_vstream;
         std::atomic_int64_t m_vpts;
         AVCodecContext* m_vcodec_ctx;
@@ -71,7 +85,7 @@ namespace m64p {
         std::mutex m_vmutex;
         std::condition_variable m_vcond;
         std::atomic_bool m_vflag;
-        
+
         AVStream* m_astream;
         std::atomic_int64_t m_apts;
         AVCodecContext* m_acodec_ctx;
@@ -82,11 +96,12 @@ namespace m64p {
         SwrContext* m_swr;
         int m_aframe_size;
         std::mutex m_amutex;
-        
+
         void video_init();
         void audio_init();
     };
-}
+
+}  // namespace m64p
 
 extern "C" struct encoder_backend_interface g_iffmpeg_encoder_backend;
 

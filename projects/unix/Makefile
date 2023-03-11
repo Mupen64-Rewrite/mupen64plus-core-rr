@@ -663,6 +663,7 @@ $(info Encoder support enabled)
 SOURCE += \
 	$(SRCDIR)/encoder/ffm_encoder.cpp \
 	$(SRCDIR)/encoder/ffm_encoder.hpp \
+	$(SRCDIR)/encoder/ffm_helpers.cpp \
 	$(SRCDIR)/encoder/ffm_helpers.hpp \
 	$(SRCDIR)/main/encoder.cpp \
 	$(SRCDIR)/main/encoder.h

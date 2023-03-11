@@ -36,9 +36,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
-#include "ffm_encoder.hpp"
-#include <libavutil/mathematics.h>
+#define M64P_CORE_PROTOTYPES 1
 #include <stdio.h>
 #include <algorithm>
 #include <array>
@@ -49,6 +47,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include "api/m64p_config.h"
+#include "ffm_encoder.hpp"
 #include "ffm_helpers.hpp"
 #include "plugin/plugin.h"
 
@@ -63,6 +63,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include "api/callbacks.h"
+#include "api/m64p_encoder.h"
 #include "api/m64p_types.h"
 }
 
@@ -72,12 +73,15 @@ static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
 static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
 
 namespace {
+    // Automatically runs a function on scope exit,
+    // much like a try/finally in Java/C#.
     template <class F>
     struct finally {
         finally(F&& f) : f(f) { static_assert(noexcept(f())); }
         ~finally() { f(); }
         F f;
     };
+
 }  // namespace
 
 namespace m64p {
@@ -160,9 +164,35 @@ namespace m64p {
             }
         }
 
-        // write the header (formatting options go here)
-        if ((err = avformat_write_header(m_fmt_ctx, NULL)) < 0)
-            throw av::av_error(err);
+        {
+            m64p_handle cfg_sect;
+            AVDictionary* dict = nullptr;
+            finally _guard([&]() noexcept {
+                av_dict_free(&dict);
+            });
+            // I know people avoid goto like the plague, but it's the best
+            // option here
+            if ((err = ConfigOpenSection("EncFFmpeg-Format", &cfg_sect)) !=
+                M64ERR_SUCCESS) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "Failed to open format config, using defaults"
+                );
+                goto ffm_encoder_0_ffm_encoder_0_write_header;
+            }
+            dict = av::config_to_dict(cfg_sect);
+            if (dict == nullptr) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "No format config options found, using defaults"
+                );
+            }
+            
+            ffm_encoder_0_ffm_encoder_0_write_header:
+            // write the header
+            if ((err = avformat_write_header(m_fmt_ctx, &dict)) < 0)
+                throw av::av_error(err);
+        }
     }
 
     ffm_encoder::~ffm_encoder() {
@@ -211,10 +241,35 @@ namespace m64p {
         // time_base = 1/frame_rate
         m_vcodec_ctx->time_base = {1, 60};
         m_vstream->time_base    = {1, 60};
+        {
+            m64p_handle cfg_sect;
+            AVDictionary* dict = nullptr;
+            finally _guard([&]() noexcept {
+                av_dict_free(&dict);
+            });
+            // I know people avoid goto like the plague, but it's the best
+            // option here
+            if ((err = ConfigOpenSection("EncFFmpeg-Video", &cfg_sect)) !=
+                M64ERR_SUCCESS) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "Failed to open video config, using defaults"
+                );
+                goto ffm_encoder_0_video_init_0_open_codec;
+            }
+            dict = av::config_to_dict(cfg_sect);
+            if (dict == nullptr) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "No video config options found, using defaults"
+                );
+            }
 
-        // open the codec
-        if ((err = avcodec_open2(m_vcodec_ctx, m_vcodec, NULL)) < 0)
-            throw av::av_error(err);
+        ffm_encoder_0_video_init_0_open_codec:
+            // open the codec
+            if ((err = avcodec_open2(m_vcodec_ctx, m_vcodec, &dict)) < 0)
+                throw av::av_error(err);
+        }
         // set codec parameters on stream
         if ((err = avcodec_parameters_from_context(
                  m_vstream->codecpar, m_vcodec_ctx
@@ -273,8 +328,34 @@ namespace m64p {
         m_acodec_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
         // open the codec
-        if ((err = avcodec_open2(m_acodec_ctx, m_acodec, NULL)) < 0)
-            throw av::av_error(err);
+        {
+            m64p_handle cfg_sect;
+            AVDictionary* dict = nullptr;
+            finally _guard([&]() noexcept {
+                av_dict_free(&dict);
+            });
+            // I know people avoid goto like the plague, but it's the best
+            // option here
+            if ((err = ConfigOpenSection("EncFFmpeg-Audio", &cfg_sect)) !=
+                M64ERR_SUCCESS) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "Failed to open audio config, using defaults"
+                );
+                goto ffm_encoder_0_audio_init_0_open_codec;
+            }
+            dict = av::config_to_dict(cfg_sect);
+            if (dict == nullptr) {
+                DebugMessage(
+                    M64MSG_WARNING,
+                    "No audio config options found, using defaults"
+                );
+            }
+            
+            ffm_encoder_0_audio_init_0_open_codec:
+            if ((err = avcodec_open2(m_acodec_ctx, m_acodec, NULL)) < 0)
+                throw av::av_error(err);
+        }
         // set codec parameters on stream
         if ((err = avcodec_parameters_from_context(
                  m_astream->codecpar, m_acodec_ctx
