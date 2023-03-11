@@ -785,6 +785,15 @@
     <ClInclude Include="..\..\src\VCR\VCR.h">
       <Filter>VCR</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\encoder\ffm_encoder.hpp">
+      <Filter>Encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\encoder\ffm_helpers.hpp">
+      <Filter>Encoder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\main\encoder.h">
+      <Filter>Encoder</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\device\r4300\mips_instructions.def">
