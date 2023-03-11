@@ -19,7 +19,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.          *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
- 
+
 #ifndef M64P_ENCODER_FFM_HELPERS_HPP
 #define M64P_ENCODER_FFM_HELPERS_HPP
 #include <cstdio>
@@ -93,7 +93,7 @@ namespace av {
                 throw av_error(err);
         }
     }
-    
+
     // For a frame containing video, sets up a pair of arrays
     // that record the same data, vertically flipped.
     inline void setup_vflip_pointers(
@@ -162,42 +162,23 @@ namespace av {
             throw av::av_error(err);
     }
 
-    inline void select_codecs(
+    void select_codecs(
         const AVOutputFormat* ofmt, const AVCodec*& vcodec,
         const AVCodec*& acodec
-    ) {
-        if (strcmp(ofmt->mime_type, "video/x-matroska") == 0) {
-            vcodec = avcodec_find_encoder(AV_CODEC_ID_H264);
-            acodec = avcodec_find_encoder(AV_CODEC_ID_FLAC);
-            return;
-        }
-        if (strcmp(ofmt->mime_type, "video/webm") == 0) {
-            vcodec = avcodec_find_encoder(AV_CODEC_ID_VP9);
-            acodec = avcodec_find_encoder(AV_CODEC_ID_OPUS);
-            return;
-            
-        }
-        vcodec = (ofmt->video_codec != AV_CODEC_ID_NONE && vcodec)
-            ? avcodec_find_encoder(ofmt->video_codec)
-            : nullptr;
-        acodec = (ofmt->audio_codec != AV_CODEC_ID_NONE && acodec)
-            ? avcodec_find_encoder(ofmt->audio_codec)
-            : nullptr;
-    }
-    
+    );
     // should be used later for HW accelerators
     inline const AVCodec* find_good_encoder(AVCodecID id) {
         void* it = nullptr;
-        const AVCodec* codec, * best_codec = nullptr;
-        
+        const AVCodec *codec, *best_codec = nullptr;
+
         while ((codec = av_codec_iterate(&it))) {
             if (codec->id != id)
                 continue;
-            
+
             if (best_codec == nullptr)
                 best_codec = codec;
         }
-        
+
         return best_codec;
     }
 
@@ -226,7 +207,7 @@ namespace av {
     struct fn_delete {
         void operator()(void* p) { P(p); }
     };
-    
+
     AVDictionary* config_to_dict(m64p_handle handle);
 }  // namespace av
 

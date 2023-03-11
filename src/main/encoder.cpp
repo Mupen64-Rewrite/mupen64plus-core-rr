@@ -6,6 +6,7 @@
 #include <any>
 #include <future>
 #include <shared_mutex>
+#include <stdexcept>
 #include <system_error>
 #include <thread>
 #include <unordered_map>
@@ -117,9 +118,13 @@ extern "C" m64p_error encoder_push_video() {
                 DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
                 return M64ERR_SYSTEM_FAIL;
             }
+            catch (const std::invalid_argument& err) {
+                DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
+            }
             catch (...) {
                 return M64ERR_INTERNAL;
             }
+        return M64ERR_INTERNAL;
         });
     }
     return M64ERR_SUCCESS;
@@ -140,9 +145,13 @@ extern "C" m64p_error encoder_set_sample_rate(unsigned int rate) {
             DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
             return M64ERR_SYSTEM_FAIL;
         }
+        catch (const std::invalid_argument& err) {
+            DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
+        }
         catch (...) {
             return M64ERR_INTERNAL;
         }
+        return M64ERR_INTERNAL;
     });
     return M64ERR_SUCCESS;
 }
@@ -162,9 +171,13 @@ extern "C" m64p_error encoder_push_audio(const void* data, size_t len) {
             DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
             return M64ERR_SYSTEM_FAIL;
         }
+        catch (const std::invalid_argument& err) {
+            DebugMessage(M64MSG_ERROR, "FFmpeg error: %s", err.what());
+        }
         catch (...) {
             return M64ERR_INTERNAL;
         }
+        return M64ERR_INTERNAL;
     });
     return M64ERR_SUCCESS;
 }

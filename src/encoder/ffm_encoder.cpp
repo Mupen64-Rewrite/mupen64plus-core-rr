@@ -37,7 +37,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define M64P_CORE_PROTOTYPES 1
-#include <stdio.h>
+#include <cstdio>
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -106,6 +106,7 @@ namespace m64p {
             throw av::av_error(err);
 
         // find codecs
+        
         av::select_codecs(ofmt, m_vcodec, m_acodec);
 
         // alloc and init video stream
