@@ -31,9 +31,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #if defined(WIN32)
-  #include <windows.h>
-  typedef ssize_t SSIZE_T
-#endif
+    #include <windows.h>
+typedef SSIZE_T ssize_t;
+    #endif
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
   #include <sys/types.h>
 #endif

@@ -47,10 +47,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <system_error>
-#include "api/m64p_config.h"
 #include "ffm_encoder.hpp"
 #include "ffm_helpers.hpp"
-#include "plugin/plugin.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -65,12 +63,14 @@ extern "C" {
 #include "api/callbacks.h"
 #include "api/m64p_encoder.h"
 #include "api/m64p_types.h"
+#include "api/m64p_config.h"
+#include "plugin/plugin.h"
 }
 
 using namespace std::literals;
 
 static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
-static AVChannelLayout chl_stereo = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
+static AVChannelLayout chl_stereo AV_CHANNEL_LAYOUT_STEREO;
 
 namespace {
     // Automatically runs a function on scope exit,

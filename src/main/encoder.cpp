@@ -1,8 +1,5 @@
 #include "encoder.h"
-#include <pthread.h>
-#include <sched.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <any>
 #include <future>
 #include <shared_mutex>
