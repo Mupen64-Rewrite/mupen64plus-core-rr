@@ -7,6 +7,8 @@
 /projects/msvc/.vs/mupen64plus-core-rr/v16
 /projects/msvc/Win32/Debug
 /projects/msvc/x64/Debug
+
+compile_commands.json
 /tools
 
 *.vcxproj.user
