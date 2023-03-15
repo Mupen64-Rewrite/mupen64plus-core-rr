@@ -773,7 +773,7 @@ targets:
 	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
-	@echo "    VCR_SUPPORT=1  == Enables VCR support
+	@echo "    VCR_SUPPORT=1  == Enables VCR support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"
