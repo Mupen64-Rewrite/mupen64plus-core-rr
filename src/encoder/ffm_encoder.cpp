@@ -372,18 +372,7 @@ namespace m64p {
 
         // Setup the swresample context with a default sample rate
         m_swr = nullptr;
-#if M64P_HAS_LIBSWRESAMPLE6
-        err = swr_alloc_set_opts2(
-            &m_swr,
-            // dst settings
-            &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
-            m_acodec_ctx->sample_rate,
-            // src settings
-            &av::chl_stereo, AV_SAMPLE_FMT_S16, 44100, 0, nullptr
-        );
-        if (err < 0)
-            throw av::av_error(err);
-#elif M64P_HAS_LIBSWRESAMPLE5
+#if M64P_HAS_LIBSWRESAMPLE5
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
@@ -491,20 +480,8 @@ namespace m64p {
         // change settings and reinitialize
         if (m_swr && swr_is_initialized(m_swr))
             swr_close(m_swr);
-#if M64P_HAS_LIBSWRESAMPLE6
-        err = swr_alloc_set_opts2(
-            &m_swr,
-            // dst settings
-            &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
-            m_acodec_ctx->sample_rate,
-            // src settings
-            &av::chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
-        );
-        if (err < 0)
-            throw av::av_error(err);
-        if ((err = swr_init(m_swr)) < 0)
-            throw av::av_error(err);
-#elif M64P_HAS_LIBSWRESAMPLE5
+
+#if M64P_HAS_LIBSWRESAMPLE5
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
