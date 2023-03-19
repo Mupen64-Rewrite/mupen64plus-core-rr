@@ -30,9 +30,11 @@
 /* necessary headers */
 #include <stdint.h>
 #include <stddef.h>
-#if defined(WIN32) && !defined(__MINGW32__)
+#if defined(WIN32)
     #include <windows.h>
-typedef SSIZE_T ssize_t;
+#if defined(_MSC_VER)
+    typedef SSIZE_T ssize_t;
+#endif
 #elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
     #include <sys/types.h>
 #endif
