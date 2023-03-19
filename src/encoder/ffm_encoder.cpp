@@ -37,9 +37,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define M64P_CORE_PROTOTYPES 1
-#include <cstdio>
+#include "ffm_encoder.hpp"
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -47,7 +48,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <system_error>
-#include "ffm_encoder.hpp"
 #include "ffm_helpers.hpp"
 
 extern "C" {
@@ -61,16 +61,15 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include "api/callbacks.h"
+#include "api/m64p_config.h"
 #include "api/m64p_encoder.h"
 #include "api/m64p_types.h"
-#include "api/m64p_config.h"
 #include "plugin/plugin.h"
 }
 
 using namespace std::literals;
 
 static const char* fmt_mime_types[] = {"video/mp4", "video/webm"};
-static AVChannelLayout chl_stereo AV_CHANNEL_LAYOUT_STEREO;
 
 namespace {
     // Automatically runs a function on scope exit,
@@ -89,7 +88,11 @@ namespace m64p {
     ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) :
         m_vflag(false) {
         int err;
+#if M64P_NEW_LIBAVFORMAT
         const AVOutputFormat* ofmt;
+#else
+        AVOutputFormat* ofmt;
+#endif
 
         // guess output format
         if (fmt == M64FMT_INFER)
@@ -106,7 +109,7 @@ namespace m64p {
             throw av::av_error(err);
 
         // find codecs
-        
+
         av::select_codecs(ofmt, m_vcodec, m_acodec);
 
         // alloc and init video stream
@@ -168,9 +171,7 @@ namespace m64p {
         {
             m64p_handle cfg_sect;
             AVDictionary* dict = nullptr;
-            finally _guard([&]() noexcept {
-                av_dict_free(&dict);
-            });
+            finally _guard([&]() noexcept { av_dict_free(&dict); });
             // I know people avoid goto like the plague, but it's the best
             // option here
             if ((err = ConfigOpenSection("EncFFmpeg-Format", &cfg_sect)) !=
@@ -188,8 +189,8 @@ namespace m64p {
                     "No format config options found, using defaults"
                 );
             }
-            
-            ffm_encoder_0_ffm_encoder_0_write_header:
+
+        ffm_encoder_0_ffm_encoder_0_write_header:
             // write the header
             if ((err = avformat_write_header(m_fmt_ctx, &dict)) < 0)
                 throw av::av_error(err);
@@ -245,9 +246,7 @@ namespace m64p {
         {
             m64p_handle cfg_sect;
             AVDictionary* dict = nullptr;
-            finally _guard([&]() noexcept {
-                av_dict_free(&dict);
-            });
+            finally _guard([&]() noexcept { av_dict_free(&dict); });
             // I know people avoid goto like the plague, but it's the best
             // option here
             if ((err = ConfigOpenSection("EncFFmpeg-Video", &cfg_sect)) !=
@@ -300,7 +299,11 @@ namespace m64p {
         int err;
 
         // sample rate and bit rate are very sensible defaults
+#if M64P_NEW_LIBSWRESAMPLE
         m_acodec_ctx->ch_layout   = AV_CHANNEL_LAYOUT_STEREO;
+#else
+        m_acodec_ctx->channel_layout   = AV_CH_LAYOUT_STEREO;
+#endif
         m_acodec_ctx->sample_rate = 48000;
         if (m_acodec->sample_fmts) {
             AVSampleFormat fmt = m_acodec->sample_fmts[0];
@@ -332,9 +335,7 @@ namespace m64p {
         {
             m64p_handle cfg_sect;
             AVDictionary* dict = nullptr;
-            finally _guard([&]() noexcept {
-                av_dict_free(&dict);
-            });
+            finally _guard([&]() noexcept { av_dict_free(&dict); });
             // I know people avoid goto like the plague, but it's the best
             // option here
             if ((err = ConfigOpenSection("EncFFmpeg-Audio", &cfg_sect)) !=
@@ -352,8 +353,8 @@ namespace m64p {
                     "No audio config options found, using defaults"
                 );
             }
-            
-            ffm_encoder_0_audio_init_0_open_codec:
+
+        ffm_encoder_0_audio_init_0_open_codec:
             if ((err = avcodec_open2(m_acodec_ctx, m_acodec, NULL)) < 0)
                 throw av::av_error(err);
         }
@@ -371,16 +372,29 @@ namespace m64p {
 
         // Setup the swresample context with a default sample rate
         m_swr = nullptr;
-        err   = swr_alloc_set_opts2(
+#if M64P_NEW_LIBSWRESAMPLE
+        err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
             &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
             m_acodec_ctx->sample_rate,
             // src settings
-            &chl_stereo, AV_SAMPLE_FMT_S16, 44100, 0, nullptr
+            &av::chl_stereo, AV_SAMPLE_FMT_S16, 44100, 0, nullptr
         );
         if (err < 0)
             throw av::av_error(err);
+#else
+        m_swr = swr_alloc_set_opts(
+            m_swr,
+            // dst settings
+            m_acodec_ctx->channel_layout, m_acodec_ctx->sample_fmt,
+            m_acodec_ctx->sample_rate,
+            // src settings
+            AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 44100, 0, nullptr
+        );
+        if (m_swr == nullptr)
+            throw std::runtime_error("Failed to update swresample context");
+#endif
 
         err = av_opt_set_int(m_swr, "dither_method", SWR_DITHER_TRIANGULAR, 0);
         if (err < 0)
@@ -450,7 +464,9 @@ namespace m64p {
             throw av::av_error(err);
 
         // set the timestamp for this frame
+#if M64P_NEW_LIBAVUTIL
         m_vframe2->time_base = m_vcodec_ctx->time_base;
+#endif
         m_vframe2->pts       = m_vpts++;
 
         av::encode_and_write(
@@ -464,18 +480,31 @@ namespace m64p {
         // change settings and reinitialize
         if (m_swr && swr_is_initialized(m_swr))
             swr_close(m_swr);
+#if M64P_NEW_LIBSWRESAMPLE
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
             &m_acodec_ctx->ch_layout, m_acodec_ctx->sample_fmt,
             m_acodec_ctx->sample_rate,
             // src settings
-            &chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
+            &av::chl_stereo, AV_SAMPLE_FMT_S16, rate, 0, nullptr
         );
         if (err < 0)
             throw av::av_error(err);
         if ((err = swr_init(m_swr)) < 0)
             throw av::av_error(err);
+#else
+        m_swr = swr_alloc_set_opts(
+            m_swr,
+            // dst settings
+            m_acodec_ctx->channel_layout, m_acodec_ctx->sample_fmt,
+            m_acodec_ctx->sample_rate,
+            // src settings
+            AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, rate, 0, nullptr
+        );
+        if (m_swr == nullptr)
+            throw std::runtime_error("Failed to update swresample context");
+#endif
     }
 
     void ffm_encoder::push_audio(const void* samples, size_t len) {
@@ -486,7 +515,15 @@ namespace m64p {
         size_t ilen;
         // Initial allocations
         ilen = len / 4;
-        av::alloc_audio_frame(m_aframe1, ilen, chl_stereo, AV_SAMPLE_FMT_S16);
+#if M64P_NEW_LIBAVUTIL
+        av::alloc_audio_frame(
+            m_aframe1, ilen, av::chl_stereo, AV_SAMPLE_FMT_S16
+        );
+#else
+        av::alloc_audio_frame(
+            m_aframe1, ilen, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16
+        );
+#endif
         int16_t *p1 = (int16_t*) samples, *p2 = (int16_t*) m_aframe1->data[0];
 
         for (size_t i = 0; i < ilen * 2; i += 2) {
@@ -515,10 +552,17 @@ namespace m64p {
             throw av::av_error(err);
         // extract complete frames from resampler
         while (swr_get_out_samples(m_swr, 0) >= m_aframe_size) {
+#if M64P_NEW_LIBAVUTIL
             av::alloc_audio_frame(
                 m_aframe2, m_aframe_size, m_acodec_ctx->ch_layout,
                 m_acodec_ctx->sample_fmt
             );
+#else
+            av::alloc_audio_frame(
+                m_aframe2, m_aframe_size, m_acodec_ctx->channel_layout,
+                m_acodec_ctx->sample_fmt
+            );
+#endif
             err = swr_convert(
                 m_swr, m_aframe2->data, m_aframe2->nb_samples, nullptr, 0
             );
@@ -547,10 +591,17 @@ namespace m64p {
         if (m_acodec) {
             // drain last bytes from resampler
             nb_samples = swr_get_out_samples(m_swr, 0);
+#if M64P_NEW_LIBAVUTIL
             av::alloc_audio_frame(
                 m_aframe2, nb_samples, m_acodec_ctx->ch_layout,
                 m_acodec_ctx->sample_fmt
             );
+#else
+            av::alloc_audio_frame(
+                m_aframe2, nb_samples, m_acodec_ctx->channel_layout,
+                m_acodec_ctx->sample_fmt
+            );
+#endif
             {
                 std::lock_guard _lock(m_amutex);
                 err =
