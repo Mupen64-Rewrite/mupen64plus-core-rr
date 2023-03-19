@@ -88,7 +88,7 @@ namespace m64p {
     ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) :
         m_vflag(false) {
         int err;
-#if M64P_NEW_LIBAVFORMAT
+#if M64P_HAS_LIBAVFORMAT5
         const AVOutputFormat* ofmt;
 #else
         AVOutputFormat* ofmt;
@@ -299,7 +299,7 @@ namespace m64p {
         int err;
 
         // sample rate and bit rate are very sensible defaults
-#if M64P_NEW_LIBSWRESAMPLE
+#if M64P_HAS_LIBSWRESAMPLE5
         m_acodec_ctx->ch_layout   = AV_CHANNEL_LAYOUT_STEREO;
 #else
         m_acodec_ctx->channel_layout   = AV_CH_LAYOUT_STEREO;
@@ -372,7 +372,7 @@ namespace m64p {
 
         // Setup the swresample context with a default sample rate
         m_swr = nullptr;
-#if M64P_NEW_LIBSWRESAMPLE
+#if M64P_HAS_LIBSWRESAMPLE5
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
@@ -464,7 +464,7 @@ namespace m64p {
             throw av::av_error(err);
 
         // set the timestamp for this frame
-#if M64P_NEW_LIBAVUTIL
+#if M64P_HAS_LIBAVUTIL5
         m_vframe2->time_base = m_vcodec_ctx->time_base;
 #endif
         m_vframe2->pts       = m_vpts++;
@@ -480,7 +480,7 @@ namespace m64p {
         // change settings and reinitialize
         if (m_swr && swr_is_initialized(m_swr))
             swr_close(m_swr);
-#if M64P_NEW_LIBSWRESAMPLE
+#if M64P_HAS_LIBSWRESAMPLE5
         err = swr_alloc_set_opts2(
             &m_swr,
             // dst settings
@@ -515,7 +515,7 @@ namespace m64p {
         size_t ilen;
         // Initial allocations
         ilen = len / 4;
-#if M64P_NEW_LIBAVUTIL
+#if M64P_HAS_LIBAVUTIL5
         av::alloc_audio_frame(
             m_aframe1, ilen, av::chl_stereo, AV_SAMPLE_FMT_S16
         );
@@ -552,7 +552,7 @@ namespace m64p {
             throw av::av_error(err);
         // extract complete frames from resampler
         while (swr_get_out_samples(m_swr, 0) >= m_aframe_size) {
-#if M64P_NEW_LIBAVUTIL
+#if M64P_HAS_LIBAVUTIL5
             av::alloc_audio_frame(
                 m_aframe2, m_aframe_size, m_acodec_ctx->ch_layout,
                 m_acodec_ctx->sample_fmt
@@ -591,7 +591,7 @@ namespace m64p {
         if (m_acodec) {
             // drain last bytes from resampler
             nb_samples = swr_get_out_samples(m_swr, 0);
-#if M64P_NEW_LIBAVUTIL
+#if M64P_HAS_LIBAVUTIL5
             av::alloc_audio_frame(
                 m_aframe2, nb_samples, m_acodec_ctx->ch_layout,
                 m_acodec_ctx->sample_fmt
