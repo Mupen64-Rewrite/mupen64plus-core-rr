@@ -207,7 +207,7 @@ jobs:
           echo.
           msbuild --version
           echo.
-          git clone --depth 1 https://github.com/mupen64plus/mupen64plus-win32-deps.git ..\mupen64plus-win32-deps
+          git clone --depth 1 https://github.com/Mupen64-Rewrite/mupen64plus-win32-deps-rr.git ..\mupen64plus-win32-deps
           md pkg
           for %%B in (Release New_Dynarec_Release) do (
             echo.
