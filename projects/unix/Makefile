@@ -353,11 +353,11 @@ endif
 ifeq ($(ENC_SUPPORT), 1)
   # FFmpeg libraries
   FFMPEG_LIB_NAMES := \
-		"libavutil >= 57.0.0" \
-		"libavcodec >= 59.0.0" \
-		"libavformat >= 59.0.0" \
-		"libswscale >= 6.7.0" \
-		"libswresample >= 4.7.0"
+		"libavutil >= 56.0.0" \
+		"libavcodec >= 58.0.0" \
+		"libavformat >= 58.0.0" \
+		"libswscale >= 5.0.0" \
+		"libswresample >= 3.0.0"
   ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
     # ensure all required libraries are found
     ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIB_NAMES) 2>/dev/null),)

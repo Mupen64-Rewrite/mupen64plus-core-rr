@@ -38,12 +38,20 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
-#include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
 #include <libswscale/swscale.h>
 }
 
+// Version check macros, as we need to support FFmpeg 4.4
+#define M64P_NEW_LIBAVFORMAT (LIBAVFORMAT_VERSION_MAJOR >= 59)
+#define M64P_NEW_LIBAVUTIL (LIBAVUTIL_VERSION_MAJOR >= 57)
+#define M64P_NEW_LIBSWRESAMPLE (LIBSWRESAMPLE_VERSION_MAJOR >= 4)
+
 namespace av {
+#if M64P_NEW_LIBAVUTIL
+    inline const AVChannelLayout chl_stereo = AV_CHANNEL_LAYOUT_STEREO;
+#endif
+    
     // ERROR HANDLING
     // ==============
 
@@ -105,7 +113,8 @@ namespace av {
             linesize[i] = -frame->linesize[i];
         }
     }
-
+    
+    #if M64P_NEW_LIBAVUTIL
     // Allocate or reallocate buffers in an audio frame.
     inline void alloc_audio_frame(
         AVFrame* frame, int nb_samples, const AVChannelLayout& layout,
@@ -134,6 +143,30 @@ namespace av {
                 throw av_error(err);
         }
     }
+    #else
+    inline void alloc_audio_frame(
+        AVFrame* frame, int nb_samples, uint64_t channel_layout,
+        AVSampleFormat sample_fmt
+    ) {
+        int err = 0;
+        if (!av_frame_is_writable(frame) || frame->nb_samples != nb_samples || frame->channel_layout != channel_layout) {
+
+            // unref the old data if any
+            if (frame->buf[0]) {
+                av_frame_unref(frame);
+            }
+
+            // reset parameters
+            frame->nb_samples = nb_samples;
+            frame->channel_layout = channel_layout;
+            frame->format     = sample_fmt;
+
+            // reallocate
+            if ((err = av_frame_get_buffer(frame, 0)) < 0)
+                throw av_error(err);
+        }
+    }
+    #endif
 
     // Encode the frame f using codec context c, by way of packet p, and stream
     // s.
