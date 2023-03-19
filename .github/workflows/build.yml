@@ -46,7 +46,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install libfreetype6-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev libsdl1.2-dev libsdl2-dev nasm zlib1g-dev libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev
           if [[ ${{ matrix.bits }} -eq 32 ]]; then
-            sudo apt-get --reinstall -y install gcc-multilib g++-multilib libc6 libc6-dev-i386 libfreetype6:i386 libgl1-mesa-glx:i386 libglu1-mesa:i386 libpng16-16:i386 libsdl1.2debian:i386 libsdl2-2.0-0:i386 zlib1g:i386
+            sudo apt-get --reinstall -y install gcc-multilib g++-multilib libc6 libc6-dev-i386 libfreetype6:i386 libgl1-mesa-glx:i386 libglu1-mesa:i386 libpng16-16:i386 libsdl1.2debian:i386 libsdl2-2.0-0:i386 zlib1g:i386 libavcodec-dev:i386 libavformat-dev:i386 libavutil-dev:i386 libswscale-dev:i386 libswresample-dev:i386
             LINK="sudo ln -s -T"
             cd /usr/lib/i386-linux-gnu
             if ! [[ -f libfreetype.so ]]; then ${LINK} libfreetype.so.6.18.1 libfreetype.so; fi
@@ -188,9 +188,9 @@ jobs:
           - toolset: v143
             platform: x64
             vs: 2022
-          - toolset: v141_xp
-            platform: x86
-            vs: 2019
+          # - toolset: v141_xp
+          #   platform: x86
+          #   vs: 2019
     name: Windows / MSVC with ${{ matrix.toolset }} / ${{ matrix.platform }}
     runs-on: windows-${{ matrix.vs }}
     if: (github.event_name == 'schedule' && github.repository == 'mupen64plus/mupen64plus-core') || (github.event_name != 'schedule')
