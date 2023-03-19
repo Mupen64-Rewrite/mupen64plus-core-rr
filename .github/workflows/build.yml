@@ -81,11 +81,11 @@ jobs:
             echo ""
             echo ":: ${{ matrix.cc }} ${{ matrix.platform }} / SDL${MSG} ::"
             echo ""
-            make NEW_DYNAREC="${DYN}" -C projects/unix clean
+            make NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix clean
             echo ""
-            make CC="${CC}" CXX="${CXX}" BITS="${{ matrix.bits }}" SDL_CONFIG="${SDL}-config" NEW_DYNAREC="${DYN}" -C projects/unix all -j4
+            make CC="${CC}" CXX="${CXX}" BITS="${{ matrix.bits }}" SDL_CONFIG="${SDL}-config" NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix all -j4
             echo ""
-            make BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" -C projects/unix install DESTDIR="${ORIG}/pkg/"
+            make BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix install DESTDIR="${ORIG}/pkg/"
             echo ""
             ls -gG pkg/usr/local/lib/libmupen64plus${POSTFIX}.so*
             echo ""
@@ -139,6 +139,7 @@ jobs:
             mingw-w64-${{ matrix.cross }}-nasm
             mingw-w64-${{ matrix.cross }}-SDL2
             mingw-w64-${{ matrix.cross }}-zlib
+            mingw-w64-${{ matrix.cross }}-ffmpeg
       - name: Build and related stuff, backup binaries
         run: |
           echo "G_REV=$(git rev-parse --short HEAD)" >> "${GITHUB_ENV}"
@@ -154,11 +155,11 @@ jobs:
             echo ""
             echo ":: ${{ matrix.cc }} ${{ matrix.platform }} / SDL2${MSG} ::"
             echo ""
-            make NEW_DYNAREC="${DYN}" -C projects/unix clean
+            make NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix clean
             echo ""
-            make CC="${CC}" CXX="${CXX}" BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" -C projects/unix all -j4
+            make CC="${CC}" CXX="${CXX}" BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix all -j4
             echo ""
-            make BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" -C projects/unix install PLUGINDIR="" SHAREDIR="" BINDIR="" MANDIR="" LIBDIR="" APPSDIR="" ICONSDIR="icons" INCDIR="api" LDCONFIG="true" DESTDIR="${ORIG}/pkg/"
+            make BITS="${{ matrix.bits }}" NEW_DYNAREC="${DYN}" VCR_SUPPORT=1 ENC_SUPPORT=1 -C projects/unix install PLUGINDIR="" SHAREDIR="" BINDIR="" MANDIR="" LIBDIR="" APPSDIR="" ICONSDIR="icons" INCDIR="api" LDCONFIG="true" DESTDIR="${ORIG}/pkg/"
             echo ""
             ls -gG pkg/mupen64plus${POSTFIX}.dll
             echo ""
