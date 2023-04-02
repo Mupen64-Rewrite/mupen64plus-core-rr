@@ -97,7 +97,7 @@ static void PrepareCore(const char* path)
 /// </summary>
 /// <param name="f">m64 file handle</param>
 /// <returns> amount of samples written (not bytes)
-size_t VCR_SaveInputs(FILE* f)
+static size_t VCR_SaveInputs(FILE* f)
 {
 	fseek(f, 0xC, SEEK_SET); //hardcoded offsets hmm
 	fwrite(&gMovieHeader->length_vis, sizeof(uint32_t), 1, f);
@@ -115,7 +115,7 @@ size_t VCR_SaveInputs(FILE* f)
 /// <param name="f">m64 file</param>
 /// <param name="header">pointer to header data (you can construct your own)</param>
 /// <returns>returns bytes written, 1024 is correct</returns>
-size_t VCR_SaveMovieHeader(FILE* f, SMovieHeader* header)
+static size_t VCR_SaveMovieHeader(FILE* f, SMovieHeader* header)
 {
 	fseek(f,0,SEEK_SET);
 	return fwrite(header, 1, sizeof(SMovieHeader), f);

@@ -70,9 +70,13 @@ Type 'make' by itself to view all available build options:
      WARNFLAGS=flag == compiler warning levels (default: -Wall)
      PIC=(1|0)      == Force enable/disable of position independent code
      OSD=(1|0)      == Enable/disable build of OpenGL On-screen display
+     NETPLAY=1      == Enable netplay functionality, requires SDL2_net
      NEW_DYNAREC=1  == Replace dynamic recompiler with Ari64's experimental dynarec
+     KEYBINDINGS=0  == Disables the default keybindings
      OPENCV=1       == Enable OpenCV support
      POSTFIX=name   == String added to the name of the the build (default: '')
+     VCR_SUPPORT=1  == Enables VCR support
+     ENC_SUPPORT=1  == Enables encoder support
    Install Options:
      PREFIX=path    == install/uninstall prefix (default: /usr/local/)
      SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)
@@ -192,6 +196,3 @@ Alt-Enter == Toggle between windowed and fullscreen (may not be supported by all
         F == Fast Forward (playback at 250% normal speed while F key is pressed)
         [ == Decrease volume
         ] == Increase volume
-
-
-

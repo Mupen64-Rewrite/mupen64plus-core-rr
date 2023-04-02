@@ -36,7 +36,7 @@ mkdir -p ${OUTPUTDIR}/source
 cd ${OUTPUTDIR}/source
 
 echo "************************************ Downloading Mupen64Plus module source code"
-git clone --branch $1 https://github.com/mupen64plus/mupen64plus-core.git
+git clone --branch $1 https://github.com/Mupen64-Rewrite/mupen64plus-core-rr.git
 git clone --branch $1 https://github.com/mupen64plus/mupen64plus-rom.git
 git clone --branch $1 https://github.com/mupen64plus/mupen64plus-ui-console.git
 git clone --branch $1 https://github.com/mupen64plus/mupen64plus-audio-sdl.git
@@ -55,5 +55,3 @@ echo "************************************ Creating archive"
 cd ..
 tar c "${OUTPUTDIR}" --owner 0 --group 0 --numeric-owner | gzip -n > "${OUTPUTDIR}.tar.gz"
 rm -rf "${OUTPUTDIR}"
-
-
