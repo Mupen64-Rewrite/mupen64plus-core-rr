@@ -39,42 +39,30 @@
 extern "C" {
 #endif
 
-/// <summary>
-/// Function that gets informed about various event happening in VCR, errors, messages, infos etc. It receives string to display somewhere, its up to frontend to decide where.
-/// </summary>
-/// <returns>True if message was handled, false if ignored (right now nothing happens when ignored, but maybe certain errors will be more flexible with this)</returns>
-typedef BOOL(*MsgFunc)(m64p_msg_level lvl, const char*);
+// VCR types
 
-/// <summary>
-/// Gives pointer to buffer that holds everything you need to save.
-/// </summary>
-/// <param name="dest">pointer to pointer to buffer</param>
-/// <returns>Length of buffer in bytes</returns>
-typedef size_t (*ptr_VCR_CollectSTData)(uint32_t** dest);
-EXPORT size_t CALL VCR_CollectSTData(uint32_t** dest);
+typedef enum {
+    M64VCRP_STATE
+} m64p_vcr_param;
 
-/// <summary>
-/// Loads data from VCR part of savestate
-/// </summary>
-/// <param name="buf">pointer to buffer, contains frame number, vi number, movie length and input data</param>
-/// <returns> error value, can be used with VCR_stateErrors[err] to get text</returns>
-typedef int (*ptr_VCR_LoadMovieData)(uint32_t* buf, unsigned len);
-EXPORT int CALL VCR_LoadMovieData(uint32_t* buf, unsigned len);
 
 /// <summary>
 /// Sets any vcr error callback
 /// </summary>
 /// <param name="callb">Function to call when error happens</param>
-typedef void (*ptr_VCR_SetErrorCallback)(MsgFunc callb);
-EXPORT void CALL VCR_SetErrorCallback(MsgFunc callb);
+typedef void (*ptr_VCR_SetErrorCallback)(BOOL (*callb)(m64p_msg_level lvl, const char*));
+EXPORT void CALL VCR_SetErrorCallback(BOOL (*callb)(m64p_msg_level lvl, const char*));
+
+typedef void (*ptr_VCR_SetStateCallback)(void (*callb)(m64p_vcr_param, int));
+EXPORT void CALL VCR_SetStateCallback(void (*callb)(m64p_vcr_param, int));
 
 //TODO: figure out needed states (I dont think stuff like starting playback is neccesary?...)
 //also this stays as enum not enum class for C compatibility
 typedef enum
 {
-	VCR_IDLE,
-	VCR_ACTIVE
-} VCRState;
+	M64VCR_IDLE,
+	M64VCR_ACTIVE
+} m64p_vcr_state;
 
 /// <summary>
 /// Returns current frame, 0-indexed, accounts for controller;
@@ -139,8 +127,8 @@ EXPORT BOOL CALL VCR_SetReadOnly(BOOL state);
 /// <param name="desc">256 max</param>
 /// <param name="startType">see macros in m64.h</param>
 /// /// <returns>M64ERR_FILES - something wrong with the path, otherwise M64ERR_SUCCESS</returns>
-typedef m64p_error (*ptr_VCR_StartRecording)(char* path, char* author, char* desc, int startType);
-EXPORT m64p_error CALL VCR_StartRecording(char* path, char* author, char* desc, int startType);
+typedef m64p_error (*ptr_VCR_StartRecording)(const char* path, const char* author, const char* desc, int startType);
+EXPORT m64p_error CALL VCR_StartRecording(const char* path, const char* author, const char* desc, int startType);
 
 /// <summary>
 /// Loads .m64 movie from path to an interal buffer and sets VCR state to VCR_PLAY.

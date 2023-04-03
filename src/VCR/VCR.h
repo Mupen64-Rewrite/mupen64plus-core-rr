@@ -26,19 +26,27 @@ typedef enum
 	VCR_ST_WRONG_FORMAT
 } VCRSTErrorCodes;
 
-static const char* VCR_LoadStateErrors[] = {
-	"no error", //0 index
-	"not from this movie.",
-	"frame number out of range.",
-	"invalid format"
-};
+extern const char* VCR_LoadStateErrors[];
 
 // exported functions are defined in api/m64p_vcr.h
+
+
+/// <summary>
+/// Gives pointer to buffer that holds everything you need to save.
+/// </summary>
+/// <param name="dest">pointer to pointer to buffer</param>
+/// <returns>Length of buffer in bytes</returns>
+size_t VCR_CollectSTData(uint32_t** dest);
+
+/// <summary>
+/// Loads data from VCR part of savestate
+/// </summary>
+/// <param name="buf">pointer to buffer, contains frame number, vi number, movie length and input data</param>
+/// <returns> error value, can be used with VCR_stateErrors[err] to get text</returns>
+int VCR_LoadMovieData(uint32_t* buf, unsigned len);
 
 #ifdef __cplusplus
 	}
 #endif
 
 #endif
-
-

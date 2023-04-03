@@ -21,6 +21,13 @@ extern "C" {
 #include "main/rom.h"
 }
 
+const char* VCR_LoadStateErrors[] = {
+	"no error", //0 index
+	"not from this movie.",
+	"frame number out of range.",
+	"invalid format"
+};
+
 #define BUFFER_GROWTH 256
 
 //either holds current movie's path, or last movie. This could be initialised from config and have "load last m64" option?
@@ -30,7 +37,7 @@ static std::vector<BUTTONS> *gMovieBuffer = NULL; //holds reference to m64 data 
 static SMovieHeader* gMovieHeader = NULL;
 static FILE* gMovieFile = NULL;
 
-static VCRState VCR_state = VCR_IDLE;
+static m64p_vcr_state VCR_state = M64VCR_IDLE;
 static bool VCR_readonly;
 static unsigned curSample = 0; //doesnt account in for multiple controllers, used as a pointer for vector
 static unsigned curVI = 0; //keeps track of VIs in a movie
@@ -45,7 +52,8 @@ BOOL DefaultErr(m64p_msg_level, const char*);
 /// <param name="what">Textual representation. Translating might be supported later</param>
 /// <returns>Was the message ignored?
 /// </returns>
-static MsgFunc VCR_Message = DefaultErr;
+static BOOL (*VCR_Message)(m64p_msg_level lvl, const char*) = DefaultErr;
+static void (*VCR_StateCallback)(m64p_vcr_param, int) = nullptr;
 
 /// <summary>
 /// default handler for errors, prints to stdout
@@ -56,9 +64,18 @@ BOOL DefaultErr(m64p_msg_level lvl, const char* what)
 	return true;
 }
 
-void VCR_SetErrorCallback(MsgFunc callb)
+void VCR_SetErrorCallback(BOOL (*callb)(m64p_msg_level lvl, const char*))
 {
 	VCR_Message = callb;
+}
+
+void VCR_SetStateCallback(void (*callb)(m64p_vcr_param, int)) {
+    VCR_StateCallback = callb;
+}
+
+static void SetVCRState(m64p_vcr_state state) {
+    VCR_state = state;
+    VCR_StateCallback(M64VCRP_STATE, state);
 }
 
 /// <summary>
@@ -130,7 +147,7 @@ void VCR_StopMovie(BOOL restart)
 			VCR_SaveMovieHeader(gMovieFile, gMovieHeader);
 			VCR_SaveInputs(gMovieFile);
 
-			VCR_state = VCR_IDLE;
+			SetVCRState(M64VCR_IDLE);
 			delete gMovieBuffer;
 			delete gMovieHeader;
 			gMovieBuffer = NULL;
@@ -192,7 +209,7 @@ BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
 
 BOOL VCR_IsPlaying()
 {
-	return VCR_state != VCR_IDLE;
+	return VCR_state != M64VCR_IDLE;
 }
 
 BOOL VCR_IsReadOnly()
@@ -302,7 +319,7 @@ m64p_error VCR_StartMovie(const char* path)
 
 	//remember it
 	strcpy(moviePath,path);
-	VCR_state = VCR_ACTIVE;
+	SetVCRState(M64VCR_ACTIVE);
 	curSample = 0;
 	VCR_SetReadOnly(true);
 	VCR_Message(M64MSG_INFO, "Started playback");
@@ -310,7 +327,7 @@ m64p_error VCR_StartMovie(const char* path)
 }
 
 
-m64p_error VCR_StartRecording(char* path, char* author, char* desc, int startType)
+m64p_error VCR_StartRecording(const char* path, const char* author, const char* desc, int startType)
 {
 	//call VCR_StopMovie yourself
 	if (VCR_IsPlaying()) return M64ERR_INTERNAL;
@@ -366,7 +383,7 @@ m64p_error VCR_StartRecording(char* path, char* author, char* desc, int startTyp
 
 	strcpy(moviePath, path);
 	VCR_SetReadOnly(false);
-	VCR_state = VCR_ACTIVE;
+    SetVCRState(M64VCR_ACTIVE);
 	curSample = 0;
 	PrepareCore(path);
 	VCR_Message(M64MSG_INFO, "Started Recording");

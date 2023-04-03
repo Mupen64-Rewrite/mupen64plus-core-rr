@@ -314,8 +314,8 @@ static int SDLCALL event_sdl_filter(void *userdata, SDL_Event *event)
 {
 #ifndef NO_KEYBINDINGS
     int cmd, action;
-    static int confirm = 0;
 #endif
+    static int confirm = 0;
 
     switch(event->type)
     {
