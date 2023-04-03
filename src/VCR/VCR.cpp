@@ -220,6 +220,7 @@ BOOL VCR_IsReadOnly()
 BOOL VCR_SetReadOnly(BOOL state)
 {
 	VCR_Message(M64MSG_INFO, state ? "Read only" : "Read write");
+    VCR_StateCallback(M64VCRP_READONLY, state);
 	return VCR_readonly = state;
 }
 

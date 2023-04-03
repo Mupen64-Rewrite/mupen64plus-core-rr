@@ -42,7 +42,8 @@ extern "C" {
 // VCR types
 
 typedef enum {
-    M64VCRP_STATE
+    M64VCRP_STATE = 0,
+    M64VCRP_READONLY
 } m64p_vcr_param;
 
 
