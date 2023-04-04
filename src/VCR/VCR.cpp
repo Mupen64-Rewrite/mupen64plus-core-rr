@@ -75,7 +75,8 @@ void VCR_SetStateCallback(void (*callb)(m64p_vcr_param, int)) {
 
 static void SetVCRState(m64p_vcr_state state) {
     VCR_state = state;
-    VCR_StateCallback(M64VCRP_STATE, state);
+    if (VCR_StateCallback)
+        VCR_StateCallback(M64VCRP_STATE, state);
 }
 
 /// <summary>
@@ -220,7 +221,8 @@ BOOL VCR_IsReadOnly()
 BOOL VCR_SetReadOnly(BOOL state)
 {
 	VCR_Message(M64MSG_INFO, state ? "Read only" : "Read write");
-    VCR_StateCallback(M64VCRP_READONLY, state);
+    if (VCR_StateCallback)
+        VCR_StateCallback(M64VCRP_READONLY, state);
 	return VCR_readonly = state;
 }
 
