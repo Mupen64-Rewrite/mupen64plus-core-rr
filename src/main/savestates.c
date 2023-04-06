@@ -44,7 +44,6 @@
 #include "main/list.h"
 #include "main/main.h"
 #include "osal/files.h"
-#include "osal/preproc.h"
 #include "osd/osd.h"
 #include "plugin/plugin.h"
 #include "rom.h"
@@ -97,31 +96,32 @@ static char *savestates_generate_path(savestates_type type)
     }
     else /* Use the selected savestate slot */
     {
-        char *filename;
+        char *filepath;
+        size_t size = 0;
+
         switch (type)
         {
             case savestates_type_m64p:
-                filename = formatstr("%s.st%d", ROM_SETTINGS.goodname, slot);
+                /* check if old file path exists, if it does then use that */
+                filepath = formatstr("%s%s.st%d", get_savestatepath(), ROM_SETTINGS.goodname, slot);
+                if (get_file_size(filepath, &size) != file_ok || size == 0)
+                {
+                    /* else use new path */
+                    filepath = formatstr("%s%s.st%d", get_savestatepath(), get_savestatefilename(), slot);
+                }
                 break;
             case savestates_type_pj64_zip:
-                filename = formatstr("%s.pj%d.zip", ROM_PARAMS.headername, slot);
+                filepath = formatstr("%s%s.pj%d.zip", get_savestatepath(), ROM_PARAMS.headername, slot);
                 break;
             case savestates_type_pj64_unc:
-                filename = formatstr("%s.pj%d", ROM_PARAMS.headername, slot);
+                filepath = formatstr("%s%s.pj%d", get_savestatepath(), ROM_PARAMS.headername, slot);
                 break;
             default:
-                filename = NULL;
+                filepath = NULL;
                 break;
         }
 
-        if (filename != NULL)
-        {
-            char *filepath = formatstr("%s%s", get_savestatepath(), filename);
-            free(filename);
-            return filepath;
-        }
-        else
-            return NULL;
+        return filepath;
     }
 }
 
@@ -152,6 +152,7 @@ void savestates_inc_slot(void)
 {
     if(++slot>9)
         slot = 0;
+    ConfigSetParameter(g_CoreConfig, "CurrentStateSlot", M64TYPE_INT, &slot);
     StateChanged(M64CORE_SAVESTATE_SLOT, slot);
 }
 
@@ -363,7 +364,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             uint32_t* vcrbuf = (uint32_t*)malloc(inputBufSize);
             gzread(f, vcrbuf, inputBufSize);
             int err;
-            if (err = VCR_LoadMovieData(vcrbuf,inputBufSize))
+            if ((err = VCR_LoadMovieData(vcrbuf,inputBufSize)))
             {
                 main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "VCR .st error: %s", VCR_LoadStateErrors[err]);
                 gzclose(f);

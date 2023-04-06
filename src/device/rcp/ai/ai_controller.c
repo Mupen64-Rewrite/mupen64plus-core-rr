@@ -30,6 +30,8 @@
 #include "device/rcp/ri/ri_controller.h"
 #include "device/rcp/vi/vi_controller.h"
 #include "device/rdram/rdram.h"
+#include "api/m64p_encoder.h"
+#include "main/encoder.h"
 
 
 #define AI_STATUS_BUSY UINT32_C(0x40000000)
@@ -78,7 +80,7 @@ static void do_dma(struct ai_controller* ai, struct ai_dma* dma)
         unsigned int frequency = (ai->regs[AI_DACRATE_REG] == 0)
             ? 44100 /* default sample rate */
             : ai->vi->clock / (1 + ai->regs[AI_DACRATE_REG]);
-
+        
         ai->iaout->set_frequency(ai->aout, frequency);
 
         ai->samples_format_changed = 0;
@@ -234,4 +236,3 @@ void ai_end_of_dma_event(void* opaque)
     fifo_pop(ai);
     raise_rcp_interrupt(ai->mi, MI_INTR_AI);
 }
-

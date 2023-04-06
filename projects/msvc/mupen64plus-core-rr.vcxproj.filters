@@ -429,6 +429,9 @@
     <ClCompile Include="..\..\src\VCR\VCR.cpp">
       <Filter>VCR</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\encoder\ffm_encoder.cpp" />
+    <ClCompile Include="..\..\src\encoder\ffm_helpers.cpp" />
+    <ClCompile Include="..\..\src\main\encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\api\callbacks.h">
@@ -785,6 +788,9 @@
     <ClInclude Include="..\..\src\VCR\VCR.h">
       <Filter>VCR</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\encoder\ffm_encoder.hpp" />
+    <ClInclude Include="..\..\src\encoder\ffm_helpers.hpp" />
+    <ClInclude Include="..\..\src\main\encoder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\src\device\r4300\mips_instructions.def">

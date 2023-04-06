@@ -160,7 +160,7 @@ SUBDIR = ../../subprojects
 OPTFLAGS ?= -O3 -flto
 WARNFLAGS ?= -Wall
 CFLAGS += -fno-strict-aliasing -fvisibility=hidden -I$(SRCDIR) -I$(SRCDIR)/asm_defines -DM64P_PARALLEL
-CXXFLAGS += -fvisibility-inlines-hidden
+CXXFLAGS += -fvisibility-inlines-hidden -std=c++17
 LDLIBS +=  -lm
 
 # Since we are building a shared library, we must compile with -fPIC on some architectures
@@ -347,6 +347,27 @@ ifeq ($(OPENCV), 1)
   endif
   CFLAGS += $(OPENCV_CFLAGS)
   LDLIBS += $(OPENCV_LDLIBS)
+endif
+
+
+ifeq ($(ENC_SUPPORT), 1)
+  # FFmpeg libraries
+  FFMPEG_LIB_NAMES := \
+		"libavutil >= 56.0.0" \
+		"libavcodec >= 58.0.0" \
+		"libavformat >= 58.0.0" \
+		"libswscale >= 5.0.0" \
+		"libswresample >= 3.0.0"
+  ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
+    # ensure all required libraries are found
+    ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIB_NAMES) 2>/dev/null),)
+      $(error No FFmpeg development libraries found!)
+    endif
+    FFMPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(FFMPEG_LIB_NAMES))
+    FFMPEG_LDLIBS += $(shell $(PKG_CONFIG) --libs $(FFMPEG_LIB_NAMES))
+  endif
+  CFLAGS += $(FFMPEG_CFLAGS)
+  LDLIBS += $(FFMPEG_LDLIBS)
 endif
 
 # test for presence of SDL
@@ -586,7 +607,8 @@ SOURCE = \
     $(SRCDIR)/plugin/dummy_audio.c \
     $(SRCDIR)/plugin/dummy_input.c \
     $(SRCDIR)/plugin/dummy_rsp.c \
-    $(MINIZIP_SOURCE)
+    $(MINIZIP_SOURCE) \
+		$(AVCPP_SOURCE)
 
 # MD5 lib
 SOURCE += \
@@ -630,9 +652,22 @@ endif
 
 # VCR
 ifeq ($(VCR_SUPPORT), 1)
-$(info VCR)
+$(info VCR support enabled)
 SOURCE += $(SRCDIR)/VCR/VCR.cpp
 CFLAGS += -DVCR_SUPPORT
+endif
+
+# Encoder
+ifeq ($(ENC_SUPPORT), 1)
+$(info Encoder support enabled)
+SOURCE += \
+	$(SRCDIR)/encoder/ffm_encoder.cpp \
+	$(SRCDIR)/encoder/ffm_encoder.hpp \
+	$(SRCDIR)/encoder/ffm_helpers.cpp \
+	$(SRCDIR)/encoder/ffm_helpers.hpp \
+	$(SRCDIR)/main/encoder.cpp \
+	$(SRCDIR)/main/encoder.h
+CFLAGS += -DENC_SUPPORT
 endif
 
 # source files for optional features
@@ -773,7 +808,8 @@ targets:
 	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
-	@echo "    VCR_SUPPORT=1  == Enables VCR support
+	@echo "    VCR_SUPPORT=1  == Enables VCR support"
+	@echo "    ENC_SUPPORT=1  == Enables encoder support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"
@@ -855,3 +891,4 @@ $(TARGET): $(OBJECTS)
 	if [ "$(SONAME)" != "" ]; then ln -sf $@ $(SONAME); fi
 
 .PHONY: all clean install uninstall targets
+.DEFAULT_GOAL := targets

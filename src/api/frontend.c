@@ -49,9 +49,14 @@
 #include "plugin/plugin.h"
 #include "vidext.h"
 
+#ifdef ENC_SUPPORT
+#include "main/encoder.h"
+#endif
+
 /* some local state variables */
 static int l_CoreInit = 0;
 static int l_ROMOpen = 0;
+static int l_DiskOpen = 0;
 static int l_CallerUsingSDL = 0;
 
 /* functions exported outside of libmupen64plus to front-end application */
@@ -59,6 +64,7 @@ EXPORT m64p_error CALL CoreStartup(int APIVersion, const char *ConfigPath, const
                                    void (*DebugCallback)(void *, int, const char *), void *Context2,
                                    void (*StateCallback)(void *, m64p_core_param, int))
 {
+    printf("DebugCallback is null: %s\n", (DebugCallback)? "true":"false");
     if (l_CoreInit)
         return M64ERR_ALREADY_INIT;
 
@@ -66,6 +72,7 @@ EXPORT m64p_error CALL CoreStartup(int APIVersion, const char *ConfigPath, const
     l_CallerUsingSDL = (SDL_WasInit(0) != 0);
 
     /* very first thing is to set the callback functions for debug info and state changing*/
+    
     SetDebugCallback(DebugCallback, Context);
     SetStateCallback(StateCallback, Context2);
 
@@ -104,6 +111,11 @@ EXPORT m64p_error CALL CoreStartup(int APIVersion, const char *ConfigPath, const
 
     /* The ROM database contains MD5 hashes, goodnames, and some game-specific parameters */
     romdatabase_open();
+    
+    /* Setup the encoder backend */
+    #ifdef ENC_SUPPORT
+    encoder_startup();
+    #endif
 
     workqueue_init();
 
@@ -129,6 +141,11 @@ EXPORT m64p_error CALL CoreShutdown(void)
     /* deallocate base memory */
     release_mem_base(g_mem_base);
     g_mem_base = NULL;
+    
+    /* Tear down the encoder backend */
+    #ifdef ENC_SUPPORT
+    encoder_shutdown();
+    #endif
 
     l_CoreInit = 0;
     return M64ERR_SUCCESS;
@@ -140,7 +157,7 @@ EXPORT m64p_error CALL CoreAttachPlugin(m64p_plugin_type PluginType, m64p_dynlib
 
     if (!l_CoreInit)
         return M64ERR_NOT_INIT;
-    if (g_EmulatorRunning || !l_ROMOpen)
+    if (g_EmulatorRunning || (!l_ROMOpen && !l_DiskOpen))
         return M64ERR_INVALID_STATE;
 
     rval = plugin_connect(PluginType, PluginLibHandle);
@@ -177,7 +194,7 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
         case M64CMD_NOP:
             return M64ERR_SUCCESS;
         case M64CMD_ROM_OPEN:
-            if (g_EmulatorRunning || l_ROMOpen)
+            if (g_EmulatorRunning || l_DiskOpen || l_ROMOpen)
                 return M64ERR_INVALID_STATE;
             if (ParamPtr == NULL || ParamInt < 4096)
                 return M64ERR_INPUT_ASSERT;
@@ -196,6 +213,26 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
             cheat_delete_all(&g_cheat_ctx);
             cheat_uninit(&g_cheat_ctx);
             return close_rom();
+        case M64CMD_DISK_OPEN:
+            if (g_EmulatorRunning || l_DiskOpen || l_ROMOpen)
+                return M64ERR_INVALID_STATE;
+            if (ParamPtr != NULL)
+                return M64ERR_INPUT_INVALID;
+            rval = open_disk();
+            if (rval == M64ERR_SUCCESS)
+            {
+                l_DiskOpen = 1;
+                ScreenshotRomOpen();
+                cheat_init(&g_cheat_ctx);
+            }
+            return rval;
+        case M64CMD_DISK_CLOSE:
+            if (g_EmulatorRunning || !l_DiskOpen)
+                return M64ERR_INVALID_STATE;
+            l_DiskOpen = 0;
+            cheat_delete_all(&g_cheat_ctx);
+            cheat_uninit(&g_cheat_ctx);
+            return close_disk();
         case M64CMD_PIF_OPEN:
             if (g_EmulatorRunning)
                 return M64ERR_INVALID_STATE;
@@ -203,7 +240,7 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
                 return M64ERR_INPUT_ASSERT;
             return open_pif((const unsigned char *) ParamPtr, ParamInt);
         case M64CMD_ROM_GET_HEADER:
-            if (!l_ROMOpen)
+            if (!l_ROMOpen && !l_DiskOpen)
                 return M64ERR_INVALID_STATE;
             if (ParamPtr == NULL)
                 return M64ERR_INPUT_ASSERT;
@@ -219,7 +256,7 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
             }
             return M64ERR_SUCCESS;
         case M64CMD_ROM_GET_SETTINGS:
-            if (!l_ROMOpen)
+            if (!l_ROMOpen && !l_DiskOpen)
                 return M64ERR_INVALID_STATE;
             if (ParamPtr == NULL)
                 return M64ERR_INPUT_ASSERT;
@@ -228,7 +265,7 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
             memcpy(ParamPtr, &ROM_SETTINGS, ParamInt);
             return M64ERR_SUCCESS;
         case M64CMD_ROM_SET_SETTINGS:
-            if (g_EmulatorRunning || !l_ROMOpen)
+            if (g_EmulatorRunning || (!l_ROMOpen && !l_DiskOpen))
                 return M64ERR_INVALID_STATE;
             if (ParamPtr == NULL)
                 return M64ERR_INPUT_ASSERT;
@@ -237,7 +274,7 @@ EXPORT m64p_error CALL CoreDoCommand(m64p_command Command, int ParamInt, void *P
             memcpy(&ROM_SETTINGS, ParamPtr, ParamInt);
             return M64ERR_SUCCESS;
         case M64CMD_EXECUTE:
-            if (g_EmulatorRunning || !l_ROMOpen)
+            if (g_EmulatorRunning || (!l_ROMOpen && !l_DiskOpen))
                 return M64ERR_INVALID_STATE;
             /* print out plugin-related warning messages */
             plugin_check();
@@ -432,5 +469,3 @@ EXPORT m64p_error CALL CoreGetRomSettings(m64p_rom_settings *RomSettings, int Ro
 
     return M64ERR_SUCCESS;
 }
-
-

@@ -26,6 +26,7 @@
 #if !defined (OSAL_FILES_H)
 #define OSAL_FILES_H
 
+#include <stdio.h>
 #include <zlib.h>
 
 /* some file-related preprocessor definitions */
@@ -65,4 +66,3 @@ extern FILE * osal_file_open (const char *filename, const char *mode);
 extern gzFile osal_gzopen(const char *filename, const char *mode);
 
 #endif /* OSAL_FILES_H */
-

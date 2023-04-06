@@ -1,7 +1,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *   Mupen64plus-core - api/callbacks.c                                    *
+ *   Mupen64plus-core - m64p_vcr.h                                         *
  *   Mupen64Plus homepage: https://mupen64plus.org/                        *
- *   Copyright (C) 2009 Richard Goedeken                                   *
+ *   Copyright (C) 2024 Jacky Guo                                          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,54 +19,61 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.          *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-/* This file contains the Core functions for handling callbacks to the
- * front-end application
+/* This header file defines typedefs for function pointers to encoder
+ * functions.
  */
+#ifndef M64P_ENCODER_H
+#define M64P_ENCODER_H
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-#include "api/m64p_frontend.h"
-#include "callbacks.h"
+
+#ifndef ENC_SUPPORT
+#define ENC_SUPPORT
+#endif
 #include "m64p_types.h"
 
-/* local variables */
-static ptr_DebugCallback pDebugFunc = NULL;
-static ptr_StateCallback pStateFunc = NULL;
-static void* DebugContext           = NULL;
-static void* StateContext           = NULL;
+#define M64P_API_FN(RT, name, ...) \
+  typedef RT (*ptr_##name)(__VA_ARGS__); \
+  EXPORT RT CALL name(__VA_ARGS__)
 
-/* global Functions for use by the Core */
-m64p_error SetDebugCallback(ptr_DebugCallback pFunc, void* Context) {
-    pDebugFunc   = pFunc;
-    DebugContext = Context;
-    return M64ERR_SUCCESS;
-}
+typedef enum {
+  // Assumes based on file extension.
+  M64FMT_INFER = -1,
+  // .mp4
+  M64FMT_MP4 = 0,
+  // .webm
+  M64FMT_WEBM,
+  // .mov
+  M64FMT_MOV,
+  
+} m64p_encoder_format;
 
-m64p_error SetStateCallback(ptr_StateCallback pFunc, void* Context) {
-    pStateFunc   = pFunc;
-    StateContext = Context;
-    return M64ERR_SUCCESS;
-}
+typedef enum {
+  M64ENC_FORMAT = 0,
+  M64ENC_VIDEO,
+  M64ENC_AUDIO,
+} m64p_encoder_hint_type;
 
-void DebugMessage(int level, const char* message, ...) {
-    char msgbuf[512];
-    va_list args;
-    
-    if (pDebugFunc == NULL)
-        return;
+/**
+ * Returns 1 if the encoder is active, 0 otherwise.
+ */
+M64P_API_FN(bool, Encoder_IsActive);
+/**
+ * Starts the encoder. To apply settings, set and save settings in the following sections:
+ * - EncFFmpeg-Video
+ * - EncFFmpeg-Audio
+ * - EncFFmpeg-Format
+ * These sections correspond to the video codec, audio codec, and muxer respectively.
+ * If this function raises an error, no encode will be started.
+ */
+M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format format);
+/**
+ * Stops the encoder. If discard is true, discards data.
+ */
+M64P_API_FN(m64p_error, Encoder_Stop, bool discard);
 
-    va_start(args, message);
-    vsnprintf(msgbuf, 512, message, args);
-    (*pDebugFunc)(DebugContext, level, msgbuf);
+#undef M64P_API_FN
 
-    va_end(args);
-}
-
-void StateChanged(m64p_core_param param_type, int new_value) {
-    if (pStateFunc == NULL)
-        return;
-
-    (*pStateFunc)(StateContext, param_type, new_value);
-}
+#endif

@@ -71,6 +71,7 @@
 #include "device/gb/gb_cart.h"
 #include "device/pif/bootrom_hle.h"
 #include "eventloop.h"
+#include "encoder.h"
 #include "main.h"
 #include "osal/files.h"
 #include "osal/preproc.h"
@@ -166,24 +167,92 @@ static const char *get_savepathdefault(const char *configpath)
     return path;
 }
 
+static char *get_save_filename(void)
+{
+    static char filename[256];
+
+    int format = ConfigGetParamInt(g_CoreConfig, "SaveFilenameFormat");
+
+    if (format == 0) {
+        snprintf(filename, 256, "%s", ROM_PARAMS.headername);
+    } else /* if (format == 1) */ {
+        if (strstr(ROM_SETTINGS.goodname, "(unknown rom)") == NULL) {
+            snprintf(filename, 256, "%.32s-%.8s", ROM_SETTINGS.goodname, ROM_SETTINGS.MD5);
+        } else if (ROM_HEADER.Name[0] != 0) {
+            snprintf(filename, 256, "%s-%.8s", ROM_PARAMS.headername, ROM_SETTINGS.MD5);
+        } else {
+            snprintf(filename, 256, "unknown-%.8s", ROM_SETTINGS.MD5);
+        }
+    }
+
+    /* sanitize filename */
+    string_replace_chars(filename, ":<>\"/\\|?*", '_');
+
+    return filename;
+}
+
 static char *get_mempaks_path(void)
 {
-    return formatstr("%s%s.mpk", get_savesrampath(), ROM_SETTINGS.goodname);
+    char *path;
+    size_t size = 0;
+
+    /* check if old file path exists, if it does then use that */
+    path = formatstr("%s%s.mpk", get_savesrampath(), ROM_SETTINGS.goodname);
+    if (get_file_size(path, &size) == file_ok && size > 0)
+    {
+        return path;
+    }
+
+    /* else use new path */
+    return formatstr("%s%s.mpk", get_savesrampath(), get_save_filename());
 }
 
 static char *get_eeprom_path(void)
 {
-    return formatstr("%s%s.eep", get_savesrampath(), ROM_SETTINGS.goodname);
+    char *path;
+    size_t size = 0;
+
+    /* check if old file path exists, if it does then use that */
+    path = formatstr("%s%s.eep", get_savesrampath(), ROM_SETTINGS.goodname);
+    if (get_file_size(path, &size) == file_ok && size > 0)
+    {
+        return path;
+    }
+
+    /* else use new path */
+    return formatstr("%s%s.eep", get_savesrampath(), get_save_filename());
 }
 
 static char *get_sram_path(void)
 {
-    return formatstr("%s%s.sra", get_savesrampath(), ROM_SETTINGS.goodname);
+    char *path;
+    size_t size = 0;
+
+    /* check if old file path exists, if it does then use that */
+    path = formatstr("%s%s.sra", get_savesrampath(), ROM_SETTINGS.goodname);
+    if (get_file_size(path, &size) == file_ok && size > 0)
+    {
+        return path;
+    }
+
+    /* else use new path */
+    return formatstr("%s%s.sra", get_savesrampath(), get_save_filename());
 }
 
 static char *get_flashram_path(void)
 {
-    return formatstr("%s%s.fla", get_savesrampath(), ROM_SETTINGS.goodname);
+    char *path;
+    size_t size = 0;
+
+    /* check if old file path exists, if it does then use that */
+    path = formatstr("%s%s.fla", get_savesrampath(), ROM_SETTINGS.goodname);
+    if (get_file_size(path, &size) == file_ok && size > 0)
+    {
+        return path;
+    }
+
+    /* else use new path */
+    return formatstr("%s%s.fla", get_savesrampath(), get_save_filename());
 }
 
 static char *get_gb_ram_path(const char* gbrom, unsigned int control_id)
@@ -290,6 +359,12 @@ const char *get_savesrampath(void)
     return get_savepathdefault(ConfigGetParamString(g_CoreConfig, "SaveSRAMPath"));
 }
 
+const char *get_savestatefilename(void)
+{
+    /* return same file name as save files */
+    return get_save_filename();
+}
+
 void main_message(m64p_msg_level level, unsigned int corner, const char *format, ...)
 {
     va_list ap;
@@ -366,6 +441,7 @@ int main_set_core_defaults(void)
     ConfigSetDefaultInt(g_CoreConfig, "SiDmaDuration", -1, "Duration of SI DMA (-1: use per game settings)");
     ConfigSetDefaultString(g_CoreConfig, "GbCameraVideoCaptureBackend1", DEFAULT_VIDEO_CAPTURE_BACKEND, "Gameboy Camera Video Capture backend");
     ConfigSetDefaultInt(g_CoreConfig, "SaveDiskFormat", 1, "Disk Save Format (0: Full Disk Copy (*.ndr/*.d6r), 1: RAM Area Only (*.ram))");
+    ConfigSetDefaultInt(g_CoreConfig, "SaveFilenameFormat", 1, "Save (SRAM/State) Filename Format (0: ROM Header Name, 1: Automatic (including partial MD5 hash))");
 
     /* handle upgrades */
     if (bUpgrade)
@@ -468,6 +544,23 @@ static void main_set_speedlimiter(int enable)
         return;
 
     l_MainSpeedLimit = enable ? 1 : 0;
+}
+
+void main_speedlimiter_toggle(void)
+{
+    l_MainSpeedLimit = !l_MainSpeedLimit;
+    main_set_speedlimiter(l_MainSpeedLimit);
+
+    if (l_MainSpeedLimit) /* fix naturally occuring audio desync */
+    {
+        main_toggle_pause();
+        SDL_Delay(1000);
+        main_toggle_pause();
+        main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Speed limiter enabled");
+    }
+
+    else
+        main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "Speed limiter disabled");
 }
 
 static int main_is_paused(void)
@@ -819,25 +912,31 @@ m64p_error main_reset(int do_hard_reset)
 
 static void video_plugin_render_callback(int bScreenRedrawn)
 {
+#ifdef M64P_OSD
     int bOSD = ConfigGetParamBool(g_CoreConfig, "OnScreenDisplay");
+#endif /* M64P_OSD */
 
     // if the flag is set to take a screenshot, then grab it now
     if (l_TakeScreenshot != 0)
     {
         // if the OSD is enabled, and the screen has not been recently redrawn, then we cannot take a screenshot now because
         // it contains the OSD text.  Wait until the next redraw
+#ifdef M64P_OSD
         if (!bOSD || bScreenRedrawn)
+#endif /* M64P_OSD */
         {
             TakeScreenshot(l_TakeScreenshot - 1);  // current frame number +1 is in l_TakeScreenshot
             l_TakeScreenshot = 0; // reset flag
         }
     }
 
+#ifdef M64P_OSD
     // if the OSD is enabled, then draw it now
     if (bOSD)
     {
         osd_render();
     }
+#endif /* M64P_OSD */
 
     // if the input plugin specified a render callback, call it now
     if(input.renderCallback)
@@ -850,7 +949,12 @@ void new_frame(void)
 {
     if (g_FrameCallback != NULL)
         (*g_FrameCallback)(l_CurrentFrame);
-
+    
+    #ifdef ENC_SUPPORT
+    // TODO:ENC pass frame to encoder
+    encoder_push_video();
+    #endif
+    
     /* advance the current frame */
     l_CurrentFrame++;
 
@@ -1293,12 +1397,12 @@ static int load_dd_disk(struct dd_disk* dd_disk, const struct storage_backend_in
     }
     
     /* Set region in dd_disk */
-    if (w == DD_REGION_JP) {
+    if (w == DD_REGION_DV || development) {
+        dd_disk->region = DDREGION_DEV;
+    } else if (w == DD_REGION_JP) {
         dd_disk->region = DDREGION_JAPAN;
     } else if (w == DD_REGION_US) {
         dd_disk->region = DDREGION_US;
-    } else if (w == DD_REGION_DV) {
-        dd_disk->region = DDREGION_DEV;
     }
 
     if (w == DD_REGION_JP || w == DD_REGION_US || w == DD_REGION_DV) {
@@ -1481,7 +1585,6 @@ m64p_error main_run(void)
 #ifdef VCR_SUPPORT
     // screw this
 #endif
-	DebugMessage(M64MSG_INFO,"                      TEST");
     size_t i, k;
     size_t rdram_size;
     uint32_t count_per_op;
@@ -1496,6 +1599,7 @@ m64p_error main_run(void)
     struct file_storage sra;
     size_t dd_rom_size;
     struct dd_disk dd_disk;
+    m64p_error failure_rval;
 
     int control_ids[GAME_CONTROLLERS_COUNT];
     struct controller_input_compat cin_compats[GAME_CONTROLLERS_COUNT];
@@ -1629,6 +1733,13 @@ m64p_error main_run(void)
     else
     {
         dd_rom_size = 0;
+    }
+
+    /* ensure the 64DD rom & disk are loaded,
+     * otherwise we have to bail right now */
+    if (g_rom_size == 0 && dd_rom_size == 0)
+    {
+        goto on_disk_failure;
     }
 
     /* setup pif channel devices */
@@ -1818,6 +1929,7 @@ m64p_error main_run(void)
                 &dd_disk, dd_idisk);
 
     // Attach rom to plugins
+    failure_rval = M64ERR_PLUGIN_FAIL;
     if (!gfx.romOpen())
     {
         goto on_gfx_open_failure;
@@ -1907,6 +2019,10 @@ m64p_error main_run(void)
 
     return M64ERR_SUCCESS;
 
+on_disk_failure:
+    failure_rval = M64ERR_INVALID_STATE;
+    rsp.romClosed();
+    input.romClosed();
 on_input_open_failure:
     audio.romClosed();
 on_audio_open_failure:
@@ -1930,7 +2046,7 @@ on_gfx_open_failure:
     close_file_storage(&mpk);
     close_dd_disk(&dd_disk);
 
-    return M64ERR_PLUGIN_FAIL;
+    return failure_rval;
 }
 
 void main_stop(void)
@@ -1942,7 +2058,7 @@ void main_stop(void)
 
 #ifdef VCR_SUPPORT
     if (VCR_IsPlaying())
-        //@TODO: ask user if they really want to
+        // frontend should handle prompts to stop.
         VCR_StopMovie(0);
 #endif
     DebugMessage(M64MSG_STATUS, "Stopping emulation.");
