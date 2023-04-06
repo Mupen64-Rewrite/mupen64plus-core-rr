@@ -32,10 +32,11 @@
 #include <stddef.h>
 #if defined(WIN32)
     #include <windows.h>
-typedef SSIZE_T ssize_t;
-    #endif
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-  #include <sys/types.h>
+#if defined(_MSC_VER)
+    typedef SSIZE_T ssize_t;
+#endif
+#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+    #include <sys/types.h>
 #endif
 
 /* DLL handles and function declaration specifiers */

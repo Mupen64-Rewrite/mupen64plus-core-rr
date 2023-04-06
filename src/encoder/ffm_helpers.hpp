@@ -42,13 +42,15 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#define VERSION_CMP
+
 // Version check macros, as we need to support FFmpeg 4.4
-#define M64P_NEW_LIBAVFORMAT (LIBAVFORMAT_VERSION_MAJOR >= 59)
-#define M64P_NEW_LIBAVUTIL (LIBAVUTIL_VERSION_MAJOR >= 57)
-#define M64P_NEW_LIBSWRESAMPLE (LIBSWRESAMPLE_VERSION_MAJOR >= 4)
+#define M64P_HAS_LIBAVFORMAT5 (LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(59, 0, 0))
+#define M64P_HAS_LIBAVUTIL5 (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0))
+#define M64P_HAS_LIBSWRESAMPLE5 (LIBSWRESAMPLE_VERSION_INT >= AV_VERSION_INT(4, 7, 0))
 
 namespace av {
-#if M64P_NEW_LIBAVUTIL
+#if M64P_HAS_LIBAVUTIL5
     inline const AVChannelLayout chl_stereo = AV_CHANNEL_LAYOUT_STEREO;
 #endif
     
@@ -114,7 +116,7 @@ namespace av {
         }
     }
     
-    #if M64P_NEW_LIBAVUTIL
+    #if M64P_HAS_LIBAVUTIL5
     // Allocate or reallocate buffers in an audio frame.
     inline void alloc_audio_frame(
         AVFrame* frame, int nb_samples, const AVChannelLayout& layout,

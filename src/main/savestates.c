@@ -44,7 +44,6 @@
 #include "main/list.h"
 #include "main/main.h"
 #include "osal/files.h"
-#include "osal/preproc.h"
 #include "osd/osd.h"
 #include "plugin/plugin.h"
 #include "rom.h"
@@ -365,7 +364,7 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             uint32_t* vcrbuf = (uint32_t*)malloc(inputBufSize);
             gzread(f, vcrbuf, inputBufSize);
             int err;
-            if (err = VCR_LoadMovieData(vcrbuf,inputBufSize))
+            if ((err = VCR_LoadMovieData(vcrbuf,inputBufSize)))
             {
                 main_message(M64MSG_STATUS, OSD_BOTTOM_LEFT, "VCR .st error: %s", VCR_LoadStateErrors[err]);
                 gzclose(f);
