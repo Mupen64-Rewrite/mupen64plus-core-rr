@@ -950,7 +950,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -969,7 +969,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -988,7 +988,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1007,7 +1007,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;..\..\..\mupen64plus-win32-deps-rr\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;RECOMPILER_DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;RECOMPILER_DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1026,7 +1026,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;..\..\..\mupen64plus-win32-deps-rr\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;RECOMPILER_DEBUG=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;RECOMPILER_DEBUG=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1047,7 +1047,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1066,7 +1066,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;..\..\..\mupen64plus-win32-deps-rr\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;RECOMPILER_DEBUG=4;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;RECOMPILER_DEBUG=4;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1087,7 +1087,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;..\..\..\mupen64plus-win32-deps-rr\capstone\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;RECOMPILER_DEBUG=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;RECOMPILER_DEBUG=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -1105,7 +1105,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
@@ -1127,7 +1127,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
@@ -1150,7 +1150,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='New_Dynarec_Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_OSD;M64P_NETPLAY;M64P_PARALLEL;NEW_DYNAREC=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
@@ -1172,7 +1172,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='New_Dynarec_Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>..\..\src;..\..\subprojects\md5;..\..\subprojects\minizip;..\..\subprojects\oglft;..\..\subprojects\xxhash;..\..\..\mupen64plus-win32-deps-rr\SDL2-2.26.3\include;..\..\..\mupen64plus-win32-deps-rr\SDL2_net-2.2.0\include;..\..\..\mupen64plus-win32-deps-rr\zlib-1.2.13\include;..\..\..\mupen64plus-win32-deps-rr\libpng-1.6.39\include;..\..\..\mupen64plus-win32-deps-rr\freetype-2.13.0\include;..\..\..\mupen64plus-win32-deps-rr\ffmpeg-5.1.2\include;..\..\..\mupen64plus-win32-deps-rr\opencv-3.0.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>VCR_SUPPORT;NO_KEYBINDINGS;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>VCR_SUPPORT;WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_DEPRECATE;DYNAREC;M64P_PARALLEL;M64P_OSD;M64P_NETPLAY;NEW_DYNAREC=2;__x86_64__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
