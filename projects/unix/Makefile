@@ -730,6 +730,10 @@ ifeq ($(KEYBINDINGS), 1)
 	CFLAGS += -DNO_KEYBINDINGS
 endif
 
+ifeq ($(ACCURATE_FPU), 1)
+  CFLAGS += -DACCURATE_FPU_BEHAVIOR
+endif
+
 ifeq ($(DEBUGGER), 1)
   SOURCE += \
     $(SRCDIR)/debugger/dbg_debugger.c \
@@ -792,7 +796,8 @@ targets:
 	@echo "    OSD=(1|0)      == Enable/disable build of OpenGL On-screen display"
 	@echo "    NETPLAY=1      == Enable netplay functionality, requires SDL2_net"
 	@echo "    NEW_DYNAREC=1  == Replace dynamic recompiler with Ari64's experimental dynarec"
-	@echo "    KEYBINDINGS=1  == Enables keybind processing in core"
+	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
+	@echo "    ACCURATE_FPU=1 == Enables accurate FPU behavior (i.e correct cause bits)"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
 	@echo "    VCR_SUPPORT=0  == Disables VCR support"
