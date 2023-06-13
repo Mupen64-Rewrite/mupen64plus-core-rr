@@ -65,9 +65,9 @@ enum { DD_DISK_ID_OFFSET = 0x43670 };
 
 static const char* savestate_magic = "M64+SAVE";
 #ifdef VCR_SUPPORT
-static const int savestate_latest_version = 0x00010801;  /* 1.8.1 = VCR data at the end*/
+static const int savestate_latest_version = 0x00010901;  /* 1.8.1 = VCR data at the end*/
 #else
-static const int savestate_latest_version = 0x00010800;  /* 1.8 */
+static const int savestate_latest_version = 0x00010900;  /* 1.8 */
 #endif
 static const unsigned char pj64_magic[4] = { 0xC8, 0xA6, 0xD8, 0x23 };
 
@@ -947,6 +947,13 @@ static int savestates_load_m64p(struct device* dev, char *filepath)
             dev->cart.flashram.status = GETDATA(curr, uint32_t);
             dev->cart.flashram.erase_page = GETDATA(curr, uint16_t);
             dev->cart.flashram.mode = GETDATA(curr, uint16_t);
+        }
+
+        if (version >= 0x00010900)
+        {
+            /* extra cp0 and cp2 state */
+            *r4300_cp0_latch(&dev->r4300.cp0) = GETDATA(curr, uint64_t);
+            *r4300_cp2_latch(&dev->r4300.cp2) = GETDATA(curr, uint64_t);
         }
     }
     else
@@ -1993,6 +2000,10 @@ static int savestates_save_m64p(const struct device* dev, char *filepath)
     PUTDATA(curr, uint16_t, dev->cart.flashram.erase_page);
     PUTDATA(curr, uint16_t, dev->cart.flashram.mode);
 
+    /* cp0 and cp2 latch (since 1.9) */
+    PUTDATA(curr, uint64_t, *r4300_cp0_latch((struct cp0*)&dev->r4300.cp0));
+    PUTDATA(curr, uint64_t, *r4300_cp2_latch((struct cp2*)&dev->r4300.cp2));
+    
 #ifdef VCR_SUPPORT
     curr = save->data+off+4096; //the previous section was supposed to be 0x1000 long >:(
     PUTDATA(curr, uint32_t, VCR_IsPlaying());
