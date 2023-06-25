@@ -160,7 +160,7 @@ SUBDIR = ../../subprojects
 OPTFLAGS ?= -O3 -flto
 WARNFLAGS ?= -Wall
 CFLAGS += -fno-strict-aliasing -fvisibility=hidden -I$(SRCDIR) -I$(SRCDIR)/asm_defines -DM64P_PARALLEL
-CXXFLAGS += -fvisibility-inlines-hidden -std=c++17
+CXXFLAGS += -fvisibility-inlines-hidden -std=c++20 -fpermissive
 LDLIBS +=  -lm
 
 # Since we are building a shared library, we must compile with -fPIC on some architectures
