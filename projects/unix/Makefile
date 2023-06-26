@@ -651,14 +651,14 @@ SOURCE += $(SRCDIR)/main/netplay.c
 endif
 
 # VCR
-ifeq ($(VCR_SUPPORT), 1)
+ifeq ($(VCR_SUPPORT), 0)
 $(info VCR support enabled)
 SOURCE += $(SRCDIR)/VCR/VCR.cpp
 CFLAGS += -DVCR_SUPPORT
 endif
 
 # Encoder
-ifeq ($(ENC_SUPPORT), 1)
+ifeq ($(ENC_SUPPORT), 0)
 $(info Encoder support enabled)
 SOURCE += \
 	$(SRCDIR)/encoder/ffm_encoder.cpp \
@@ -739,7 +739,7 @@ ifeq ($(LIRC), 1)
   LDLIBS += -llirc_client
 endif
 
-ifeq ($(KEYBINDINGS), 0)
+ifeq ($(KEYBINDINGS), 1)
 	CFLAGS += -DNO_KEYBINDINGS
 endif
 
@@ -805,11 +805,11 @@ targets:
 	@echo "    OSD=(1|0)      == Enable/disable build of OpenGL On-screen display"
 	@echo "    NETPLAY=1      == Enable netplay functionality, requires SDL2_net"
 	@echo "    NEW_DYNAREC=1  == Replace dynamic recompiler with Ari64's experimental dynarec"
-	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
+	@echo "    KEYBINDINGS=1  == Enables keybind processing in core"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
-	@echo "    VCR_SUPPORT=1  == Enables VCR support"
-	@echo "    ENC_SUPPORT=1  == Enables encoder support"
+	@echo "    VCR_SUPPORT=0  == Disables VCR support"
+	@echo "    ENC_SUPPORT=0  == Disables encoder support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"
