@@ -56,6 +56,7 @@
     <ClCompile Include="..\..\src\api\config.c" />
     <ClCompile Include="..\..\src\api\debugger.c" />
     <ClCompile Include="..\..\src\api\frontend.c" />
+    <ClCompile Include="..\..\src\api\rdram_api.c" />
     <ClCompile Include="..\..\src\api\vidext.c" />
     <ClCompile Include="..\..\src\backends\api\video_capture_backend.c" />
     <ClCompile Include="..\..\src\backends\plugins_compat\input_plugin_compat.c" />

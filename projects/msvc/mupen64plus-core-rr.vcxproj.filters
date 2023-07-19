@@ -432,6 +432,7 @@
     <ClCompile Include="..\..\src\encoder\ffm_encoder.cpp" />
     <ClCompile Include="..\..\src\encoder\ffm_helpers.cpp" />
     <ClCompile Include="..\..\src\main\encoder.cpp" />
+    <ClCompile Include="..\..\src\api\rdram_api.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\api\callbacks.h">
