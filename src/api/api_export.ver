@@ -93,4 +93,6 @@ VCR_LoadErrorStates;
 Encoder_IsActive;
 Encoder_Start;
 Encoder_Stop;
+RDRAM_ReadAligned;
+RDRAM_WriteAligned;
 local: *; };
