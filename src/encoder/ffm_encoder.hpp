@@ -34,6 +34,8 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
+
+#define M64P_ENCODER_PROTOTYPES
 #include "api/m64p_encoder.h"
 #include "api/m64p_types.h"
 }
@@ -54,7 +56,7 @@ namespace m64p {
             std::unordered_map<std::string, std::string> audio_opts;
         };
 
-        ffm_encoder(const char* path, m64p_encoder_format fmt);
+        ffm_encoder(const char* path, const char* fmt);
 
         ~ffm_encoder();
 
@@ -69,7 +71,7 @@ namespace m64p {
 
     private:
         ffm_encoder(
-            const char* path, m64p_encoder_format fmt, const config* cfg
+            const char* path, const char* fmt, const config* cfg
         );
 
         AVFormatContext* m_fmt_ctx;

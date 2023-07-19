@@ -163,6 +163,11 @@ CFLAGS += -fno-strict-aliasing -fvisibility=hidden -I$(SRCDIR) -I$(SRCDIR)/asm_d
 CXXFLAGS += -fvisibility-inlines-hidden -std=c++20 -fpermissive
 LDLIBS +=  -lm
 
+# Enable certain options by default
+VCR_SUPPORT ?= 1
+ENC_SUPPORT ?= 1
+RDRAM_SUPPORT ?= 1
+
 # Since we are building a shared library, we must compile with -fPIC on some architectures
 # On 32-bit x86 systems we do not want to use -fPIC because we don't have to and it has a big performance penalty on this arch
 ifeq ($(PIC), 1)
@@ -454,9 +459,6 @@ ifeq ($(OSD), 1)
   LDLIBS += $(GLU_LDLIBS)
 endif
 
-# Enable debugger by default
-DEBUGGER ?= 1
-
 # set base program pointers and flags
 CC       = $(CROSS_COMPILE)gcc
 CXX      = $(CROSS_COMPILE)g++
@@ -654,14 +656,14 @@ SOURCE += $(SRCDIR)/main/netplay.c
 endif
 
 # VCR
-ifeq ($(VCR_SUPPORT), 0)
+ifeq ($(VCR_SUPPORT), 1)
 $(info VCR support enabled)
 SOURCE += $(SRCDIR)/VCR/VCR.cpp
 CFLAGS += -DVCR_SUPPORT
 endif
 
 # Encoder
-ifeq ($(ENC_SUPPORT), 0)
+ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
 SOURCE += \
 	$(SRCDIR)/encoder/ffm_encoder.cpp \
@@ -671,6 +673,12 @@ SOURCE += \
 	$(SRCDIR)/main/encoder.cpp \
 	$(SRCDIR)/main/encoder.h
 CFLAGS += -DENC_SUPPORT
+endif
+
+# RDRAM access
+ifeq ($(RDRAM_SUPPORT), 1)
+$(info RDRAM support enabled)
+SOURCE += $(SRCDIR)/api/rdram.c
 endif
 
 # source files for optional features
@@ -813,6 +821,7 @@ targets:
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
 	@echo "    VCR_SUPPORT=0  == Disables VCR support"
 	@echo "    ENC_SUPPORT=0  == Disables encoder support"
+	@echo "    RDRAM_SUPPORT=0  == Disables encoder support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"
