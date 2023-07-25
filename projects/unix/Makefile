@@ -678,7 +678,7 @@ endif
 # RDRAM access
 ifeq ($(RDRAM_SUPPORT), 1)
 $(info RDRAM support enabled)
-SOURCE += $(SRCDIR)/api/rdram.c
+SOURCE += $(SRCDIR)/api/rdram_api.c
 endif
 
 # source files for optional features
