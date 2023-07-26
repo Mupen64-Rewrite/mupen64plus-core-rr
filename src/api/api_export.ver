@@ -93,4 +93,7 @@ VCR_LoadErrorStates;
 Encoder_IsActive;
 Encoder_Start;
 Encoder_Stop;
+Encoder_GetSampleRate;
+Encoder_SetSampleCallback;
+Encoder_SetRateChangedCallback;
 local: *; };

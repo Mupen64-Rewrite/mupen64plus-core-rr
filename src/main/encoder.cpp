@@ -15,6 +15,7 @@ extern "C" {
 #include "api/m64p_common.h"
 #include "api/m64p_encoder.h"
 #include "api/m64p_types.h"
+#include "main.h"  //for sample rate
 }
 
 static m64p::ffm_encoder* ffm_encoder;
@@ -26,6 +27,28 @@ static std::shared_mutex enc_rwlock;
 static std::unordered_map<std::string, std::string> format_opts;
 
 extern struct encoder_backend_interface g_iffmpeg_encoder_backend;
+
+// Audio stuff
+SampleCallback* sample_callback            = NULL;
+RateChangedCallback* rate_changed_callback = NULL;
+
+m64p_error Encoder_SetSampleCallback(SampleCallback* callback) {
+    sample_callback = callback;
+    return M64ERR_SUCCESS;
+}
+m64p_error Encoder_SetRateChangedCallback(RateChangedCallback* callback) {
+    rate_changed_callback = callback;
+    return M64ERR_SUCCESS;
+}
+
+unsigned int Encoder_GetSampleRate(void) {
+    // dacrate = ai->vi->clock / frequency - 1
+    // ai->vi->clock/(dacrate+1) = frequency
+    return (unsigned int) g_dev.ai.vi->clock /
+        (g_dev.ai.regs[AI_DACRATE_REG] + 1);
+}
+
+// Audio end
 
 bool Encoder_IsActive() {
     return ffm_encoder != NULL;
@@ -121,7 +144,7 @@ extern "C" m64p_error encoder_push_video() {
             catch (...) {
                 return M64ERR_INTERNAL;
             }
-        return M64ERR_INTERNAL;
+            return M64ERR_INTERNAL;
         });
     }
     return M64ERR_SUCCESS;

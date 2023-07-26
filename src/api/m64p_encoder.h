@@ -74,6 +74,18 @@ M64P_API_FN(m64p_error, Encoder_Start, const char* path, m64p_encoder_format for
  */
 M64P_API_FN(m64p_error, Encoder_Stop, bool discard);
 
+// Audio callbacks
+
+/*
+ * Registers a callback that will be called when new sample is available.
+ * The called function receives pointer to the sample and size in bytes.
+ */
+M64P_API_FN(m64p_error, Encoder_SetSampleCallback, SampleCallback* callback);
+M64P_API_FN(
+    m64p_error, Encoder_SetRateChangedCallback, RateChangedCallback* callback
+);
+M64P_API_FN(unsigned int, Encoder_GetSampleRate, void);
+
 #undef M64P_API_FN
 
 #endif
