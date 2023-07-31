@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#define M64P_ENCODER_PROTOTYPES
+
 #include "backends/api/audio_out_backend.h"
 #include "device/rcp/ai/ai_controller.h"
 #include "device/rcp/ri/ri_controller.h"

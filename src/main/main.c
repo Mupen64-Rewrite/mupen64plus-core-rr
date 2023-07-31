@@ -1944,8 +1944,9 @@ m64p_error main_run(void)
     }
 
     /* set up the SDL key repeat and event filter to catch keyboard/joystick commands for the core */
+#ifndef VCR_SUPPORT
     event_initialize();
-
+#endif
     /* initialize the on-screen display */
     if (ConfigGetParamBool(g_CoreConfig, "OnScreenDisplay"))
     {
