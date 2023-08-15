@@ -73,7 +73,9 @@ Type 'make' by itself to view all available build options:
      NETPLAY=1      == Enable netplay functionality, requires SDL2_net
      NEW_DYNAREC=1  == Replace dynamic recompiler with Ari64's experimental dynarec
      KEYBINDINGS=0  == Disables the default keybindings
+     ACCURATE_FPU=1 == Enables accurate FPU behavior (i.e correct cause bits)
      OPENCV=1       == Enable OpenCV support
+     VULKAN=0       == Disable vulkan support for the default video extension implementation
      POSTFIX=name   == String added to the name of the the build (default: '')
      VCR_SUPPORT=1  == Enables VCR support
      ENC_SUPPORT=1  == Enables encoder support
