@@ -29,15 +29,15 @@ static std::unordered_map<std::string, std::string> format_opts;
 extern struct encoder_backend_interface g_iffmpeg_encoder_backend;
 
 // Audio stuff
-SampleCallback* sample_callback            = NULL;
-RateChangedCallback* rate_changed_callback = NULL;
+SampleCallback* g_sample_callback            = NULL;
+RateChangedCallback* g_rate_changed_callback = NULL;
 
 m64p_error Encoder_SetSampleCallback(SampleCallback* callback) {
-    sample_callback = callback;
+    g_sample_callback = callback;
     return M64ERR_SUCCESS;
 }
 m64p_error Encoder_SetRateChangedCallback(RateChangedCallback* callback) {
-    rate_changed_callback = callback;
+    g_rate_changed_callback = callback;
     return M64ERR_SUCCESS;
 }
 

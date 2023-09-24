@@ -33,8 +33,8 @@
 
 static void audio_plugin_set_frequency(void* aout, unsigned int frequency) {
 #ifdef ENC_SUPPORT
-    if (Encoder_IsActive() && rate_changed_callback != NULL)
-        rate_changed_callback(frequency);
+    if (Encoder_IsActive() && g_rate_changed_callback != NULL)
+        g_rate_changed_callback(frequency);
         // encoder_set_sample_rate(frequency);
 #endif
 
@@ -52,8 +52,8 @@ static void audio_plugin_push_samples(
     void* aout, const void* buffer, size_t size
 ) {
 #ifdef ENC_SUPPORT
-    if (Encoder_IsActive() && sample_callback != NULL)
-        sample_callback(buffer, size);
+    if (Encoder_IsActive() && g_sample_callback != NULL)
+        g_sample_callback(buffer, size);
         // encoder_push_audio(buffer, size);
 #endif
     /* abuse core & audio plugin implementation to approximate desired effect */
