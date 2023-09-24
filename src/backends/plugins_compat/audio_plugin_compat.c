@@ -33,14 +33,14 @@
 #include "main/rom.h"
 #include "plugin/plugin.h"
 
-static void audio_plugin_set_frequency(void* aout, unsigned int frequency)
-{
-    #ifdef ENC_SUPPORT
-    if (Encoder_IsActive())
-        encoder_set_sample_rate(frequency);
-    #endif
-    
-    struct ai_controller* ai = (struct ai_controller*)aout;
+static void audio_plugin_set_frequency(void* aout, unsigned int frequency) {
+#ifdef ENC_SUPPORT
+    if (Encoder_IsActive() && g_rate_changed_callback != NULL)
+        g_rate_changed_callback(frequency);
+        // encoder_set_sample_rate(frequency);
+#endif
+
+    struct ai_controller* ai  = (struct ai_controller*) aout;
     uint32_t saved_ai_dacrate = ai->regs[AI_DACRATE_REG];
 
     ai->regs[AI_DACRATE_REG] = ai->vi->clock / frequency - 1;
@@ -50,13 +50,14 @@ static void audio_plugin_set_frequency(void* aout, unsigned int frequency)
     ai->regs[AI_DACRATE_REG] = saved_ai_dacrate;
 }
 
-static void audio_plugin_push_samples(void* aout, const void* buffer, size_t size)
-{
-    
-    #ifdef ENC_SUPPORT
-    if (Encoder_IsActive())
-        encoder_push_audio(buffer, size);
-    #endif
+static void audio_plugin_push_samples(
+    void* aout, const void* buffer, size_t size
+) {
+#ifdef ENC_SUPPORT
+    if (Encoder_IsActive() && g_sample_callback != NULL)
+        g_sample_callback(buffer, size);
+        // encoder_push_audio(buffer, size);
+#endif
     /* abuse core & audio plugin implementation to approximate desired effect */
     struct ai_controller* ai = (struct ai_controller*)aout;
     uint32_t saved_ai_length = ai->regs[AI_LEN_REG];

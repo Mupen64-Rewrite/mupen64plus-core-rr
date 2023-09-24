@@ -455,4 +455,8 @@ typedef struct {
   uint32_t      (*VidExtFuncGLGetDefaultFramebuffer)(void);
 } m64p_video_extension_functions;
 
+// Encoding api
+typedef void(SampleCallback)(const void* sample, size_t sampleLen);
+typedef void(RateChangedCallback)(unsigned int rate);
+
 #endif /* define M64P_TYPES_H */
