@@ -85,7 +85,7 @@ namespace {
 
 namespace m64p {
 
-    ffm_encoder::ffm_encoder(const char* path, m64p_encoder_format fmt) :
+    ffm_encoder::ffm_encoder(const char* path, const char* fmt) :
         m_vflag(false) {
         int err;
 #if M64P_HAS_LIBAVFORMAT5
@@ -95,10 +95,10 @@ namespace m64p {
 #endif
 
         // guess output format
-        if (fmt == M64FMT_INFER)
+        if (fmt == NULL)
             ofmt = av_guess_format(NULL, path, NULL);
         else
-            ofmt = av_guess_format(NULL, NULL, fmt_mime_types[fmt]);
+            ofmt = av_guess_format(NULL, NULL, fmt);
 
         if (ofmt == nullptr)
             throw std::runtime_error("No available output formats");

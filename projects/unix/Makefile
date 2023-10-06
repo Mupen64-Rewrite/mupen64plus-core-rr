@@ -160,8 +160,13 @@ SUBDIR = ../../subprojects
 OPTFLAGS ?= -O3 -flto
 WARNFLAGS ?= -Wall
 CFLAGS += -fno-strict-aliasing -fvisibility=hidden -I$(SRCDIR) -I$(SRCDIR)/asm_defines -DM64P_PARALLEL
-CXXFLAGS += -fvisibility-inlines-hidden -std=c++17
+CXXFLAGS += -fvisibility-inlines-hidden -std=c++20 -fpermissive
 LDLIBS +=  -lm
+
+# Enable certain options by default
+VCR_SUPPORT ?= 1
+ENC_SUPPORT ?= 1
+RDRAM_SUPPORT ?= 1
 
 # Since we are building a shared library, we must compile with -fPIC on some architectures
 # On 32-bit x86 systems we do not want to use -fPIC because we don't have to and it has a big performance penalty on this arch
@@ -670,6 +675,12 @@ SOURCE += \
 CFLAGS += -DENC_SUPPORT
 endif
 
+# RDRAM access
+ifeq ($(RDRAM_SUPPORT), 1)
+$(info RDRAM support enabled)
+SOURCE += $(SRCDIR)/api/rdram_api.c
+endif
+
 # source files for optional features
 ifeq ($(DBG_COUNT), 1)
   CFLAGS += -DCOUNT_INSTR
@@ -739,7 +750,7 @@ ifeq ($(LIRC), 1)
   LDLIBS += -llirc_client
 endif
 
-ifeq ($(KEYBINDINGS), 0)
+ifeq ($(KEYBINDINGS), 1)
 	CFLAGS += -DNO_KEYBINDINGS
 endif
 
@@ -805,11 +816,12 @@ targets:
 	@echo "    OSD=(1|0)      == Enable/disable build of OpenGL On-screen display"
 	@echo "    NETPLAY=1      == Enable netplay functionality, requires SDL2_net"
 	@echo "    NEW_DYNAREC=1  == Replace dynamic recompiler with Ari64's experimental dynarec"
-	@echo "    KEYBINDINGS=0  == Disables the default keybindings"
+	@echo "    KEYBINDINGS=1  == Enables keybind processing in core"
 	@echo "    OPENCV=1       == Enable OpenCV support"
 	@echo "    POSTFIX=name   == String added to the name of the the build (default: '')"
-	@echo "    VCR_SUPPORT=1  == Enables VCR support"
-	@echo "    ENC_SUPPORT=1  == Enables encoder support"
+	@echo "    VCR_SUPPORT=0  == Disables VCR support"
+	@echo "    ENC_SUPPORT=0  == Disables encoder support"
+	@echo "    RDRAM_SUPPORT=0  == Disables encoder support"
 	@echo "  Install Options:"
 	@echo "    PREFIX=path    == install/uninstall prefix (default: /usr/local/)"
 	@echo "    SHAREDIR=path  == path to install shared data files (default: PREFIX/share/mupen64plus)"
@@ -819,7 +831,7 @@ targets:
 	@echo "  Debugging Options:"
 	@echo "    PROFILE=1      == build gprof instrumentation into binaries for profiling"
 	@echo "    DEBUG=1        == add debugging symbols to binaries"
-	@echo "    DEBUGGER=1     == build debugger API into core for front-ends.  runs slower."
+	@echo "    DEBUGGER=1     == build debugger API into core for front-ends.  runs slower. (default: 1)"
 	@echo "    DBG_CORE=1     == print debugging info in r4300 core"
 	@echo "    DBG_COUNT=1    == print R4300 instruction count totals (64-bit dynarec only)"
 	@echo "    DBG_COMPARE=1  == enable core-synchronized r4300 debugging"

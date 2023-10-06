@@ -54,7 +54,7 @@ bool Encoder_IsActive() {
 }
 
 EXPORT m64p_error CALL
-Encoder_Start(const char* path, m64p_encoder_format format) {
+Encoder_Start(const char* path, const char* format) {
     std::unique_lock _lock(enc_rwlock);
     if (g_encoder_active)
         return M64ERR_ALREADY_INIT;

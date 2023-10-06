@@ -96,4 +96,6 @@ Encoder_Stop;
 Encoder_GetSampleRate;
 Encoder_SetSampleCallback;
 Encoder_SetRateChangedCallback;
+RDRAM_ReadAligned;
+RDRAM_WriteAligned;
 local: *; };
