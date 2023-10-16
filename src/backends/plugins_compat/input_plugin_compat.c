@@ -79,19 +79,12 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, int is_
 
     int pak_change_requested = 0;
 
-    /* first poll controller */
 #ifdef VCR_SUPPORT
-    //this looks werid, but we want to recover from GetKeys fails
-    if (!(VCR_IsPlaying() && VCR_IsReadOnly() && !is_test && !VCR_GetKeys(&keys, cin_compat->control_id)))
-    {
+    // if gotData, don't try to overwrite keys further, it's final
+    BOOL gotData = VCR_GetKeys(&keys, cin_compat->control_id);
+    if (!gotData) {
 #endif
-        if (!netplay_is_init())
-        {
-            if (input.getKeys)
-                input.getKeys(cin_compat->control_id, &keys);
-        }
-        else
-        {
+        if (netplay_is_init()) {
             int netplay_controller = netplay_get_controller(cin_compat->control_id);
             if (netplay_controller >= 0)
             {
@@ -109,6 +102,10 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, int is_
             }
         }
 #ifdef VCR_SUPPORT
+        else {
+            if (input.getKeys)
+                input.getKeys(cin_compat->control_id, &keys);
+        }
     }
 #endif
 
@@ -161,11 +158,13 @@ static m64p_error input_plugin_get_input(void* opaque, uint32_t* input_, int is_
 
     *input_ = keys.Value;
 #ifdef VCR_SUPPORT
-    if (VCR_IsPlaying() && !VCR_IsReadOnly() && !is_test)
-    {
-        VCR_SetKeys(keys, cin_compat->control_id);
-    }
+
+    VCR_SetOverlay(keys, cin_compat->control_id);
+    VCR_AdvanceFrame();
+    VCR_ResetOverlay();
+
 #endif
+
     return M64ERR_SUCCESS;
 }
 

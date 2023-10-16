@@ -41,6 +41,12 @@ static m64p_vcr_state VCR_state = M64VCR_IDLE;
 static bool VCR_readonly;
 static unsigned curSample = 0; //doesnt account in for multiple controllers, used as a pointer for vector
 static unsigned curVI = 0; //keeps track of VIs in a movie
+
+struct {
+    BUTTONS buttons[4] {};
+    bool channelHasOverlay[4] {};  // no clue what the compiler will do here
+
+} overlay;
 //@TODO: add VCR_AdvanceVI();
 
 BOOL DefaultErr(m64p_msg_level, const char*);
@@ -177,35 +183,66 @@ void VCR_StopMovie(BOOL restart)
 	}
 }
 
-//@TODO: test this
-void VCR_SetKeys(BUTTONS keys, unsigned channel)
-{
-	if (curSample >= gMovieBuffer->size())
-	{
-		gMovieBuffer->resize(gMovieBuffer->size() + BUFFER_GROWTH); //impending doom approaches...
-	}
-	(*gMovieBuffer)[curSample++].Value = keys.Value;
-	gMovieHeader->length_samples = curSample;
-	gMovieHeader->length_vis = -1;
+void VCR_SetOverlay(BUTTONS keys, unsigned channel) {
+    if (VCR_IsPlaying() && !VCR_IsReadOnly())
+        (*gMovieBuffer)[curSample].Value = keys.Value;
+    else
+        overlay.buttons[channel] = keys;
 }
 
-//@TODO: add reset input detection (reserved1 and 2 true pressed, everything else not pressed)
-BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel)
-{
-	//gives out inputs for channels that are present in m64 header
-	//less bloated than using the flags itself
-	if (gMovieHeader->cFlags.present & (1 << channel))
-	{
-		//check if there are frames left
-		//curSample is 0 indexed, so we must >= with size
-		if (curSample >= gMovieBuffer->size())
-		{
-			VCR_StopMovie(false);
-			return true;
-		}
-		keys->Value = (*gMovieBuffer)[curSample++].Value; //get the value, then advance frame
-	}
-	return false;
+//@TODO: add reset input detection (reserved1 and 2 true pressed, everything
+// else not pressed)
+BOOL VCR_GetKeys(BUTTONS* keys, unsigned channel) {
+    if (overlay.channelHasOverlay[channel])
+        keys->Value = overlay.buttons[channel].Value;
+    else {
+        if (VCR_IsPlaying()) {
+            if (gMovieHeader->cFlags.present & (1 << channel))
+                keys->Value = (*gMovieBuffer)[curSample].Value;
+        }
+        else if (input.getKeys) {
+            // nothing to do, just read input plugin
+            input.getKeys(channel, keys);
+            return false;
+        }
+        else {
+            // input plugin doesn't exist
+            keys->Value = 0;
+            return false;
+        }
+    }
+    // tell outer that this button data is final.
+    return true;
+}
+
+void VCR_ResetOverlay() {
+    for (unsigned i = 0; i < 4; ++i) {
+        overlay.buttons[i].Value     = 0;
+        overlay.channelHasOverlay[i] = false;
+    }
+}
+
+unsigned int VCR_AdvanceFrame() {
+    if (!VCR_IsPlaying())
+        return 0;  // no movie
+
+    VCR_ResetOverlay();
+    ++curSample;
+    // check if there are frames left
+    // curSample is 0 indexed, so we must >= with size
+    if (curSample >= gMovieBuffer->size()) {
+        if (VCR_IsReadOnly()) {
+            VCR_StopMovie(false);
+            return 0;  // movie ended
+        }
+        else {
+            gMovieBuffer->resize(gMovieBuffer->size() + BUFFER_GROWTH);
+            gMovieHeader->length_samples = curSample;
+            gMovieHeader->length_vis     = -1;  // legacy m64 thing
+            return curSample;
+        }
+    }
+    return curSample;
 }
 
 BOOL VCR_IsPlaying()
@@ -223,7 +260,8 @@ BOOL VCR_SetReadOnly(BOOL state)
 	VCR_Message(M64MSG_INFO, state ? "Read only" : "Read write");
     if (VCR_StateCallback)
         VCR_StateCallback(M64VCRP_READONLY, state);
-	return VCR_readonly = state;
+
+    return VCR_readonly = state;
 }
 
 unsigned VCR_GetCurFrame()

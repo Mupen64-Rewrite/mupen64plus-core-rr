@@ -80,19 +80,24 @@ typedef void (*ptr_VCR_StopMovie)(BOOL restart);
 EXPORT void CALL VCR_StopMovie(BOOL restart);
 
 /// <summary>
-/// pastes given keys to current frame, then advances frame. If input buffer is too small it resizes itself
+/// Sets the next input received by mupen to `keys`, overlaying the normal
+/// plugin input/m64 frame.
+/// This is the primary way of writing to m64 when movie
+/// is being written. When movie is read-only, the inputs are still being
+/// overlaid, but will not be written to file.
 /// </summary>
 /// <param name="keys">keys describing frame data</param>
 /// <param name="channel">controller id</param>
-typedef void (*ptr_VCR_SetKeys)(BUTTONS keys, unsigned channel);
-EXPORT void CALL VCR_SetKeys(BUTTONS keys, unsigned channel);
+typedef void (*ptr_VCR_SetOverlay)(BUTTONS keys, unsigned channel);
+EXPORT void CALL VCR_SetOverlay(BUTTONS keys, unsigned channel);
 
 /// <summary>
-/// Pastes next frame to keys. If this was last frame, stops m64 playback. There always is a frame if VCR is not idle
+/// Writes to `keys` whatever the emulator should receive as input on next
+/// frame. If a movie is being read, it will be next frame from movie, otherwise
+/// plugin input.
 /// </summary>
 /// <param name="keys">place where to paste inputs</param>
 /// <param name="channel">controller id</param>
-/// <returns>true if movie ended</returns>
 typedef BOOL (*ptr_VCR_GetKeys)(BUTTONS* keys, unsigned channel);
 EXPORT BOOL CALL VCR_GetKeys(BUTTONS* keys, unsigned channel);
 
@@ -102,6 +107,18 @@ EXPORT BOOL CALL VCR_GetKeys(BUTTONS* keys, unsigned channel);
 /// <returns>false if idle, otherwise true</returns>
 typedef BOOL (*ptr_VCR_IsPlaying)(void);
 EXPORT BOOL CALL VCR_IsPlaying();
+
+/// <summary>
+/// if VCR is active, advances frame counter.
+/// If movie is being recorded, also writes current overlay (set with
+/// VCR_SetOverlay) to m64 buffer otherwise does nothing.
+/// </summary>
+/// <returns>frame number, or 0 if vcr is idle</returns>
+typedef unsigned int (*ptr_VCR_AdvanceFrame)(void);
+EXPORT unsigned int CALL VCR_AdvanceFrame();
+
+typedef void (*ptr_VCR_ResetOverlay)(void);
+EXPORT void CALL VCR_ResetOverlay();
 
 /// <summary>
 /// Checks if readonly is true. Note: the value doesn't make sense if VCR is idle, it doesn't inform whether a movie is actually playing
