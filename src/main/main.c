@@ -951,8 +951,7 @@ void new_frame(void)
         (*g_FrameCallback)(l_CurrentFrame);
     
     #ifdef ENC_SUPPORT
-    // TODO:ENC pass frame to encoder
-    encoder_push_video();
+    // encoder_push_video();
     #endif
     
     /* advance the current frame */

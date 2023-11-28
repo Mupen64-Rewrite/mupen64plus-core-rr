@@ -15,6 +15,6 @@
 %define offsetof_struct_recomp_return_address (0x00000178)
 %define offsetof_struct_recomp_save_rip (0x00000170)
 %define offsetof_struct_recomp_save_rsp (0x00000168)
-%define offsetof_struct_tlb_entries (0x00000000)
 %define offsetof_struct_tlb_LUT_r (0x00000680)
 %define offsetof_struct_tlb_LUT_w (0x00400680)
+%define offsetof_struct_tlb_entries (0x00000000)

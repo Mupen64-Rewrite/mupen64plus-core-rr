@@ -354,27 +354,6 @@ ifeq ($(OPENCV), 1)
   LDLIBS += $(OPENCV_LDLIBS)
 endif
 
-
-ifeq ($(ENC_SUPPORT), 1)
-  # FFmpeg libraries
-  FFMPEG_LIB_NAMES := \
-		"libavutil >= 56.0.0" \
-		"libavcodec >= 58.0.0" \
-		"libavformat >= 58.0.0" \
-		"libswscale >= 5.0.0" \
-		"libswresample >= 3.0.0"
-  ifeq ($(origin FFMPEG_CFLAGS) $(origin FFMPEG_LDLIBS), undefined undefined)
-    # ensure all required libraries are found
-    ifeq ($(shell $(PKG_CONFIG) --modversion $(FFMPEG_LIB_NAMES) 2>/dev/null),)
-      $(error No FFmpeg development libraries found!)
-    endif
-    FFMPEG_CFLAGS += $(shell $(PKG_CONFIG) --cflags $(FFMPEG_LIB_NAMES))
-    FFMPEG_LDLIBS += $(shell $(PKG_CONFIG) --libs $(FFMPEG_LIB_NAMES))
-  endif
-  CFLAGS += $(FFMPEG_CFLAGS)
-  LDLIBS += $(FFMPEG_LDLIBS)
-endif
-
 # test for presence of SDL
 ifeq ($(origin SDL_CFLAGS) $(origin SDL_LDLIBS), undefined undefined)
   SDL_CONFIG = $(CROSS_COMPILE)sdl2-config
@@ -666,10 +645,6 @@ endif
 ifeq ($(ENC_SUPPORT), 1)
 $(info Encoder support enabled)
 SOURCE += \
-	$(SRCDIR)/encoder/ffm_encoder.cpp \
-	$(SRCDIR)/encoder/ffm_encoder.hpp \
-	$(SRCDIR)/encoder/ffm_helpers.cpp \
-	$(SRCDIR)/encoder/ffm_helpers.hpp \
 	$(SRCDIR)/main/encoder.cpp \
 	$(SRCDIR)/main/encoder.h
 CFLAGS += -DENC_SUPPORT

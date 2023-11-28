@@ -7,6 +7,8 @@
 /projects/msvc/Win32/
 /projects/msvc/x64/
 
+/.idea
+
 compile_commands.json
 /tools
 
