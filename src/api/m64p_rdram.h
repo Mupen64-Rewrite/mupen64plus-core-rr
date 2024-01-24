@@ -44,6 +44,7 @@ extern "C" {
 
 M64P_API_FN(m64p_error, RDRAM_ReadAligned, uint32_t addr, uint32_t* value);
 M64P_API_FN(m64p_error, RDRAM_WriteAligned, uint32_t addr, uint32_t value, uint32_t mask);
+M64P_API_FN(uint32_t*, RDRAM_GetMemBase);
 
 #undef M64P_API_FN
 
