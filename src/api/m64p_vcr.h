@@ -46,6 +46,13 @@ typedef enum {
     M64VCRP_READONLY
 } m64p_vcr_param;
 
+//TODO: figure out needed states (I dont think stuff like starting playback is neccesary?...)
+//also this stays as enum not enum class for C compatibility
+typedef enum
+{
+	M64VCR_IDLE,
+	M64VCR_ACTIVE
+} m64p_vcr_state;
 
 /// <summary>
 /// Sets any vcr error callback
@@ -57,13 +64,6 @@ EXPORT void CALL VCR_SetErrorCallback(BOOL (*callb)(m64p_msg_level lvl, const ch
 typedef void (*ptr_VCR_SetStateCallback)(void (*callb)(m64p_vcr_param, int));
 EXPORT void CALL VCR_SetStateCallback(void (*callb)(m64p_vcr_param, int));
 
-//TODO: figure out needed states (I dont think stuff like starting playback is neccesary?...)
-//also this stays as enum not enum class for C compatibility
-typedef enum
-{
-	M64VCR_IDLE,
-	M64VCR_ACTIVE
-} m64p_vcr_state;
 
 /// <summary>
 /// Returns current frame, 0-indexed, accounts for controller;

@@ -77,9 +77,9 @@ M64P_API_FN(m64p_error, Encoder_Stop, bool discard);
  * Registers a callback that will be called when new sample is available.
  * The called function receives pointer to the sample and size in bytes.
  */
-M64P_API_FN(m64p_error, Encoder_SetSampleCallback, SampleCallback* callback);
+M64P_API_FN(m64p_error, Encoder_SetSampleCallback, m64p_sample_callback* callback);
 M64P_API_FN(
-    m64p_error, Encoder_SetRateChangedCallback, RateChangedCallback* callback
+    m64p_error, Encoder_SetRateChangedCallback, m64p_rate_changed_callback* callback
 );
 M64P_API_FN(unsigned int, Encoder_GetSampleRate, void);
 

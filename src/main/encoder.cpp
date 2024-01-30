@@ -25,14 +25,14 @@ static std::shared_mutex enc_rwlock;
 static std::unordered_map<std::string, std::string> format_opts;
 
 // Audio stuff
-SampleCallback* g_sample_callback            = NULL;
-RateChangedCallback* g_rate_changed_callback = NULL;
+m64p_sample_callback* g_sample_callback            = NULL;
+m64p_rate_changed_callback* g_rate_changed_callback = NULL;
 
-EXPORT m64p_error CALL Encoder_SetSampleCallback(SampleCallback* callback) {
+EXPORT m64p_error CALL Encoder_SetSampleCallback(m64p_sample_callback* callback) {
     g_sample_callback = callback;
     return M64ERR_SUCCESS;
 }
-EXPORT m64p_error CALL Encoder_SetRateChangedCallback(RateChangedCallback* callback) {
+EXPORT m64p_error CALL Encoder_SetRateChangedCallback(m64p_rate_changed_callback* callback) {
     g_rate_changed_callback = callback;
     return M64ERR_SUCCESS;
 }

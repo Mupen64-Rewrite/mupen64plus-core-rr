@@ -11,8 +11,8 @@ extern void encoder_startup();
 extern void encoder_shutdown();
 
 // Audio stuff
-extern SampleCallback* g_sample_callback;
-extern RateChangedCallback* g_rate_changed_callback;
+extern m64p_sample_callback* g_sample_callback;
+extern m64p_rate_changed_callback* g_rate_changed_callback;
 
 #ifdef __cplusplus
 }
