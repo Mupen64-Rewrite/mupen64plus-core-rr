@@ -202,6 +202,7 @@ static char *get_mempaks_path(void)
     {
         return path;
     }
+    free(path);
 
     /* else use new path */
     return formatstr("%s%s.mpk", get_savesrampath(), get_save_filename());
@@ -218,6 +219,7 @@ static char *get_eeprom_path(void)
     {
         return path;
     }
+    free(path);
 
     /* else use new path */
     return formatstr("%s%s.eep", get_savesrampath(), get_save_filename());
@@ -234,6 +236,7 @@ static char *get_sram_path(void)
     {
         return path;
     }
+    free(path);
 
     /* else use new path */
     return formatstr("%s%s.sra", get_savesrampath(), get_save_filename());
@@ -250,6 +253,7 @@ static char *get_flashram_path(void)
     {
         return path;
     }
+    free(path);
 
     /* else use new path */
     return formatstr("%s%s.fla", get_savesrampath(), get_save_filename());
@@ -548,6 +552,9 @@ static void main_set_speedlimiter(int enable)
 
 void main_speedlimiter_toggle(void)
 {
+    if (netplay_is_init())
+        return;
+
     l_MainSpeedLimit = !l_MainSpeedLimit;
     main_set_speedlimiter(l_MainSpeedLimit);
 
@@ -730,6 +737,7 @@ m64p_error main_core_state_query(m64p_core_param param, int *rval)
             *rval = event_gameshark_active();
             break;
         // these are only used for callbacks; they cannot be queried or set
+        case M64CORE_SCREENSHOT_CAPTURED:
         case M64CORE_STATE_LOADCOMPLETE:
         case M64CORE_STATE_SAVECOMPLETE:
             return M64ERR_INPUT_INVALID;
@@ -1643,14 +1651,11 @@ m64p_error main_run(void)
     else
         disable_extra_mem = ConfigGetParamInt(g_CoreConfig, "DisableExtraMem");
 
-
-    rdram_size = (disable_extra_mem == 0) ? 0x800000 : 0x400000;
-
     if (count_per_op <= 0)
         count_per_op = ROM_SETTINGS.countperop;
 
-    if (count_per_op_denom_pot > 11)
-        count_per_op_denom_pot = 11;
+    if (count_per_op_denom_pot > 20)
+        count_per_op_denom_pot = 20;
 
     si_dma_duration = ConfigGetParamInt(g_CoreConfig, "SiDmaDuration");
     if (si_dma_duration < 0)
@@ -1658,6 +1663,8 @@ m64p_error main_run(void)
 
     //During netplay, player 1 is the source of truth for these settings
     netplay_sync_settings(&count_per_op, &count_per_op_denom_pot, &disable_extra_mem, &si_dma_duration, &emumode, &no_compiled_jump);
+
+    rdram_size = (disable_extra_mem == 0) ? 0x800000 : 0x400000;
 
     cheat_add_hacks(&g_cheat_ctx, ROM_PARAMS.cheats);
 
@@ -1946,6 +1953,10 @@ m64p_error main_run(void)
 #ifndef VCR_SUPPORT
     event_initialize();
 #endif
+
+    /* initialize frame counter */
+    l_CurrentFrame = 0;
+
     /* initialize the on-screen display */
     if (ConfigGetParamBool(g_CoreConfig, "OnScreenDisplay"))
     {

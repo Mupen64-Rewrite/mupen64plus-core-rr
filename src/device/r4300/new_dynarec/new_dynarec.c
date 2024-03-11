@@ -22,10 +22,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h> // needed for u_int, u_char, etc
 #include <assert.h>
 
 #if defined(__APPLE__)
-#include <sys/types.h> // needed for u_int, u_char, etc
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
@@ -5407,7 +5407,7 @@ static void cop1_assemble(int i,struct regstat *i_regs)
     signed char fs=get_reg(i_regs->regmap,FSREG);
     if(tl>=0) {
       u_int copr=(source[i]>>11)&0x1f;
-      if(copr==0) emit_readword((intptr_t)&g_dev.r4300.new_dynarec_hot_state.fcr0,tl);
+      if(copr==0) emit_readword((intptr_t)&g_dev.r4300.new_dynarec_hot_state.cp1_fcr0,tl);
       if(copr==31)
       {
           if(fs>=0) emit_mov(fs,tl);
